@@ -34,7 +34,6 @@ function NoraChatInner() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [injectContext, setInjectContext] = useState(true);
-  const [contextInjectedOnce, setContextInjectedOnce] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -55,48 +54,37 @@ function NoraChatInner() {
     if (!trimmedInput || isLoading) return;
 
     setErrorMsg(null);
-    let updatedMessages: Message[] = [...messages];
 
-    // Inyección de Contexto Simulado en el primer mensaje de usuario o si el interruptor está activo
-    if (injectContext && !contextInjectedOnce) {
-      const simulatedContext = {
-        empresa: "Nexora ISP",
-        kpis: MOCK_KPIS,
-        clientesRegistrados: MOCK_CLIENTES,
-        infraestructuraNodos: MOCK_NODOS,
-        ticketsActivos: MOCK_TICKETS,
-      };
-
-      const contextMessage: Message = {
-        role: "user",
-        content: `[SISTEMA - TELEMETRÍA EN TIEMPO REAL DEL ERP NEXORA/ISPCUBE]:\n${JSON.stringify(
-          simulatedContext,
-          null,
-          2
-        )}\n\n[INSTRUCCIÓN DEL OPERADOR]:\n${trimmedInput}`,
-      };
-
-      updatedMessages.push(contextMessage);
-      setContextInjectedOnce(true);
-    } else {
-      updatedMessages.push({ role: "user", content: trimmedInput });
-    }
+    // El estado visual solo contiene lo que el operador escribió
+    const updatedMessages: Message[] = [...messages, { role: "user", content: trimmedInput }];
 
     setMessages(updatedMessages);
     setInput("");
     setIsLoading(true);
 
+    // El contexto del ERP viaja aparte y el backend lo inyecta como mensaje de sistema.
+    // Se envía en cada petición mientras el interruptor esté activo (no queda en el historial).
+    const contextPayload = injectContext
+      ? {
+          empresa: "Nexora ISP",
+          kpis: MOCK_KPIS,
+          clientesRegistrados: MOCK_CLIENTES,
+          infraestructuraNodos: MOCK_NODOS,
+          ticketsActivos: MOCK_TICKETS,
+        }
+      : undefined;
+
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedMessages }),
+        body: JSON.stringify({ messages: updatedMessages, contextPayload }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.details || data?.error || "Error al comunicarse con Nora ISP");
+        throw new Error(data?.error || "Error al comunicarse con Nora ISP");
       }
 
       if (data.content) {
