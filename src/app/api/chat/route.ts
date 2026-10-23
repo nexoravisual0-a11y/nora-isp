@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     const {
       messages = [],
       contextPayload,
-      model = "llama-3.3-70b-versatile",
+      model = "qwen/qwen3.8-27b",
       temperature = 0.5,
     } = body;
 
