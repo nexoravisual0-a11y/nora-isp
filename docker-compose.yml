@@ -1,0 +1,16 @@
+services:
+  nora-isp-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nora-isp-core
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - WHATSAPP_VERIFY_TOKEN=${WHATSAPP_VERIFY_TOKEN}
+      - CHATWOOT_API_TOKEN=${CHATWOOT_API_TOKEN}
+    env_file:
+      - .env
