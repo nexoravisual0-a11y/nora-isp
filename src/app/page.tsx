@@ -1,235 +1,233 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
+import Link from "next/link";
+import {
+  Users,
+  AlertCircle,
+  Network,
+  LifeBuoy,
+  ArrowUpRight,
+  Wifi,
+  Activity,
+  Zap,
+  TrendingUp,
+} from "lucide-react";
+import { MOCK_KPIS, MOCK_CLIENTES, MOCK_NODOS } from "@/lib/mock-data";
 
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export default function DiagnosticChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "assistant",
-      content:
-        "Hola, soy Nora, el núcleo de Inteligencia Artificial (CRM, ERP y Soporte Técnico Nivel 3). ¿En qué puedo asistirte hoy con la red FTTH, clientes o equipos MikroTik?",
-    },
-  ]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedInput = input.trim();
-    if (!trimmedInput || isLoading) return;
-
-    setErrorMsg(null);
-    const newMessages: Message[] = [...messages, { role: "user", content: trimmedInput }];
-    setMessages(newMessages);
-    setInput("");
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: newMessages,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.details || data?.error || "Error al comunicarse con Nora ISP");
-      }
-
-      if (data.content) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: data.content },
-        ]);
-      } else {
-        throw new Error("Respuesta vacía del servidor.");
-      }
-    } catch (err: unknown) {
-      console.error("[DIAGNOSTIC_CHAT_ERROR]:", err);
-      const msg = err instanceof Error ? err.message : "Error inesperado de comunicación.";
-      setErrorMsg(msg);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleQuickQuestion = (question: string) => {
-    if (isLoading) return;
-    setInput(question);
-  };
-
+export default function DashboardSummaryPage() {
   return (
-    <div className="flex h-screen flex-col bg-slate-950 text-slate-100 font-sans">
-      {/* Header Corporativo */}
-      <header className="border-b border-slate-800 bg-slate-900/90 px-6 py-4 shadow-sm backdrop-blur">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-600 font-bold text-white shadow-md shadow-cyan-500/20">
-              N
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold tracking-tight text-white">Nora ISP Core</h1>
-                <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400 border border-emerald-500/20">
-                  Online
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Consola de Diagnóstico Directo • FTTH / MikroTik / CRM N3
-              </p>
-            </div>
-          </div>
-          <div className="text-right text-xs text-slate-500 hidden sm:block">
-            <span>Motor: Groq / Llama-3.3-70B</span>
-          </div>
+    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+      {/* Bienvenida y Status Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            Panel General de Control (NOC & ERP)
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Supervisión en tiempo real de infraestructura FTTH, clientes PPPoE y salud de red.
+          </p>
         </div>
-      </header>
-
-      {/* Sugerencias Rápidas para pruebas de diagnóstico */}
-      <div className="border-b border-slate-800/60 bg-slate-900/40 px-6 py-2">
-        <div className="mx-auto flex max-w-4xl items-center gap-2 overflow-x-auto text-xs text-slate-400 scrollbar-none py-1">
-          <span className="font-medium text-slate-500 shrink-0">Pruebas rápidas:</span>
-          <button
-            onClick={() =>
-              handleQuickQuestion(
-                "Tengo una ONU con potencia óptica recibida de -29.8 dBm en una caja NAP de 1x8. ¿Qué atenuación y diagnóstico das?"
-              )
-            }
-            className="rounded-lg border border-slate-800 bg-slate-800/60 px-3 py-1 hover:border-cyan-500/40 hover:text-cyan-300 transition-colors shrink-0"
+        <div className="flex items-center gap-3">
+          <Link
+            href="/nora"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all"
           >
-            Diagnóstico Óptico (-29.8 dBm)
-          </button>
-          <button
-            onClick={() =>
-              handleQuickQuestion(
-                "¿Cómo creo un PPPoE Server en MikroTik con interfaz vlan100 y cola de 100M/50M para un cliente?"
-              )
-            }
-            className="rounded-lg border border-slate-800 bg-slate-800/60 px-3 py-1 hover:border-cyan-500/40 hover:text-cyan-300 transition-colors shrink-0"
-          >
-            Configuración MikroTik PPPoE
-          </button>
-          <button
-            onClick={() =>
-              handleQuickQuestion(
-                "Soy el cliente Juan Pérez. Me cortaron el servicio de internet hoy y ya pagué la factura hace una hora."
-              )
-            }
-            className="rounded-lg border border-slate-800 bg-slate-800/60 px-3 py-1 hover:border-cyan-500/40 hover:text-cyan-300 transition-colors shrink-0"
-          >
-            Reclamo CRM / Facturación
-          </button>
+            <Zap className="h-4 w-4" />
+            <span>Consultar con Nora Copilot</span>
+          </Link>
         </div>
       </div>
 
-      {/* Contenedor de Mensajes */}
-      <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-        <div className="mx-auto max-w-4xl space-y-4">
-          {messages.map((msg, index) => {
-            const isUser = msg.role === "user";
-            return (
-              <div
-                key={index}
-                className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
-              >
-                {/* Avatar */}
-                <div
-                  className={`flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-lg text-xs font-bold ${
-                    isUser
-                      ? "bg-indigo-600 text-white"
-                      : "bg-cyan-700 text-cyan-100 border border-cyan-500/30"
-                  }`}
-                >
-                  {isUser ? "TÚ" : "NR"}
-                </div>
-
-                {/* Burbuja de Mensaje */}
-                <div
-                  className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                    isUser
-                      ? "bg-indigo-600 text-white rounded-tr-none"
-                      : "bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none whitespace-pre-wrap"
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Loader de IA */}
-          {isLoading && (
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-lg bg-cyan-700 text-xs font-bold text-cyan-100 border border-cyan-500/30">
-                NR
-              </div>
-              <div className="rounded-2xl rounded-tl-none border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-400">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:200ms]"></span>
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:400ms]"></span>
-                  <span className="ml-2 text-xs text-slate-400">Procesando diagnóstico FTTH/CRM...</span>
-                </div>
-              </div>
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {/* Card 1: Clientes Activos */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-medium">Clientes Activos</span>
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <Users className="h-4 w-4" />
             </div>
-          )}
-
-          {/* Alerta de Error */}
-          {errorMsg && (
-            <div className="rounded-xl border border-rose-900/50 bg-rose-950/30 p-4 text-sm text-rose-300">
-              <span className="font-semibold">Error:</span> {errorMsg}
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-white tracking-tight">
+              {MOCK_KPIS.clientesActivos.toLocaleString()}
+            </span>
+            <span className="text-xs font-semibold text-emerald-400 flex items-center">
+              <TrendingUp className="h-3 w-3 mr-0.5" /> +4.2%
+            </span>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400">Total servicios con PPPoE provisionado</p>
         </div>
-      </main>
 
-      {/* Input de Envío */}
-      <footer className="border-t border-slate-800 bg-slate-900/90 p-4 backdrop-blur">
-        <form onSubmit={handleSubmit} className="mx-auto max-w-4xl flex items-center gap-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            disabled={isLoading}
-            placeholder="Escribe tu consulta técnica (GPON, dBm, MikroTik) o reclamo de cliente..."
-            className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 transition"
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="flex items-center justify-center rounded-xl bg-cyan-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {isLoading ? (
-              <span className="text-xs">Enviando...</span>
-            ) : (
-              <span>Enviar</span>
-            )}
-          </button>
-        </form>
-      </footer>
+        {/* Card 2: Clientes Morosos */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-medium">Clientes Morosos</span>
+            <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+              <AlertCircle className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-white tracking-tight">
+              {MOCK_KPIS.clientesMorosos}
+            </span>
+            <span className="text-xs text-slate-400">1.8% del padrón</span>
+          </div>
+          <p className="mt-2 text-[11px] text-amber-400/90">
+            Pendientes de corte o suspensión automática
+          </p>
+        </div>
+
+        {/* Card 3: Nodos OLT / Red */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-medium">Nodos OLT Caídos</span>
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <Network className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-emerald-400 tracking-tight">
+              {MOCK_KPIS.nodosOltCaidos}
+            </span>
+            <span className="text-xs font-semibold text-emerald-400">100% Operativo</span>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400">2 OLTs Huawei / FiberHome en línea</p>
+        </div>
+
+        {/* Card 4: Tickets de Soporte */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-xs font-medium">Tickets Abiertos</span>
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              <LifeBuoy className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-white tracking-tight">
+              {MOCK_KPIS.ticketsAbiertos}
+            </span>
+            <span className="text-xs text-rose-400 font-medium">1 Urgente N3</span>
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400">Tiempo prom. resolución: 18 min</p>
+        </div>
+      </div>
+
+      {/* Grid de Secciones: Alertas de Red y Tráfico */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Alertas Críticas de Red */}
+        <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2">
+              <Activity className="h-5 w-5 text-cyan-400" />
+              <h2 className="text-base font-semibold text-white">
+                Alertas de Infraestructura y Atenuación
+              </h2>
+            </div>
+            <Link
+              href="/nodos"
+              className="text-xs font-medium text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+            >
+              <span>Ver todas las cajas NAP</span>
+              <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {/* Alerta 1 */}
+            <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-950/20 flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 mt-0.5">
+                  <AlertCircle className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-rose-200">
+                      Caja NAP-04 (Barrio Centro)
+                    </span>
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                      Crítico
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Lectura óptica: <strong>-30.5 dBm</strong>. Pérdida severa de potencia detectada en
+                    splitter de segundo nivel. ONU de cliente María Elena desconectada por atenuación.
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/nora"
+                className="shrink-0 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-xs font-medium text-rose-300 hover:bg-rose-500/20 transition"
+              >
+                Diagnosticar con IA
+              </Link>
+            </div>
+
+            {/* Alerta 2 */}
+            <div className="p-4 rounded-xl border border-slate-800 bg-slate-800/40 flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 mt-0.5">
+                  <Wifi className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-200">
+                      OLT Huawei EA5800 - Pon 1/1 y 1/2
+                    </span>
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
+                      Normal
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Potencia de transmisión SFP+ en +5.2 dBm. Tráfico nominal a 4.1 Gbps sin drop de paquetes.
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs text-slate-500 self-center">Estable</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Consumo y Métricas Rápidas */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-white">Tráfico de Red Core</h2>
+              <span className="text-xs font-semibold text-cyan-400">MikroTik CCR2216</span>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-xs text-slate-400 mb-1">
+                  <span>Tráfico Uplink BGP</span>
+                  <span className="text-white font-semibold">8.4 / 10 Gbps (84%)</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 w-[84%] rounded-full" />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-xs text-slate-400 mb-1">
+                  <span>Pool IPv4 CGNAT</span>
+                  <span className="text-white font-semibold">91% Asignado</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-amber-500 w-[91%] rounded-full" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-slate-800/80">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400">Cerebro Nora ISP:</span>
+              <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" /> Modo Standby NOC
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
