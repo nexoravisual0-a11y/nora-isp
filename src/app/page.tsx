@@ -51,7 +51,7 @@ export default function DashboardSummaryPage() {
           </div>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-white tracking-tight">
-              {MOCK_KPIS.clientesActivos.toLocaleString()}
+              {MOCK_KPIS.clientesActivos.toLocaleString("es-AR")}
             </span>
             <span className="text-xs font-semibold text-emerald-400 flex items-center">
               <TrendingUp className="h-3 w-3 mr-0.5" /> +4.2%
