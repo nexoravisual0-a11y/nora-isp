@@ -102,7 +102,7 @@ async function ejecutarCrearTicket(args: {
 }) {
   const randomSuffix = Math.floor(100 + Math.random() * 900);
   const ticketId = `TCK-${randomSuffix}`;
-  const timestampDesc = "Hace un instante (Nora IA)";
+  const timestampDesc = "Hace un instante (Carale IA)";
 
   await sql`
     INSERT INTO tickets (id, cliente, asunto, prioridad, estado, creado)
@@ -447,7 +447,7 @@ export async function POST(req: NextRequest) {
 
     const errorMessage = error instanceof Error ? error.message : "Error interno del servidor";
     return NextResponse.json(
-      { error: `Fallo en el procesamiento de Nora IA: ${errorMessage}`, code: "INTERNAL" },
+      { error: `Fallo en el procesamiento de Carale IA: ${errorMessage}`, code: "INTERNAL" },
       { status: 500 }
     );
   }

@@ -72,7 +72,7 @@ export default function ClientesPage() {
             className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 text-xs font-semibold transition"
           >
             <Bot className="h-4 w-4" />
-            <span>Consultar CRM con Nora</span>
+            <span>Consultar CRM con Carale</span>
           </Link>
           <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold shadow-md transition">
             <Plus className="h-4 w-4" />
@@ -219,11 +219,11 @@ export default function ClientesPage() {
                     <td className="py-3.5 px-4 text-right">
                       <Link
                         href={`/nora?prompt=${encodeURIComponent(
-                          `Analiza el estado del cliente ${cliente.nombre} (${cliente.id}), con plan ${cliente.plan}, estado ${cliente.estadoPppoe}, facturación ${cliente.estadoFacturacion} y potencia óptica ${cliente.potenciaDbm} dBm.`
+                          `Carale, analiza el estado del cliente ${cliente.nombre} (${cliente.id}), con plan ${cliente.plan}, estado ${cliente.estadoPppoe}, facturación ${cliente.estadoFacturacion} y potencia óptica ${cliente.potenciaDbm} dBm.`
                         )}`}
                         className="px-2.5 py-1 rounded-lg border border-slate-700 bg-slate-800 text-[11px] text-cyan-300 hover:border-cyan-500/40 transition"
                       >
-                        Auditar con Nora
+                        Auditar con Carale
                       </Link>
                     </td>
                   </tr>

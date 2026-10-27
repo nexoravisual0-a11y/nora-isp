@@ -73,7 +73,7 @@ export default async function DashboardSummaryPage() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-500/20 transition-all"
           >
             <Zap className="h-4 w-4" />
-            <span>Consultar con Nora Copilot</span>
+            <span>Consultar con Carale</span>
           </Link>
         </div>
       </div>
@@ -161,7 +161,7 @@ export default async function DashboardSummaryPage() {
             <span className="text-3xl font-extrabold text-white tracking-tight">
               {stats.ticketsAbiertos}
             </span>
-            <span className="text-xs text-cyan-400 font-medium">Gestión Nora IA</span>
+            <span className="text-xs text-cyan-400 font-medium">Gestión Carale IA</span>
           </div>
           <p className="mt-2 text-[11px] text-slate-400">Reclamos técnicos persistidos</p>
         </div>
@@ -263,7 +263,7 @@ export default async function DashboardSummaryPage() {
 
           <div className="mt-6 pt-5 border-t border-slate-800/80">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400">Cerebro Nora ISP:</span>
+              <span className="text-slate-400">Cerebro Carale:</span>
               <span className="text-emerald-400 font-semibold flex items-center gap-1">
                 <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Conectado a Neon DB
               </span>

@@ -13,10 +13,7 @@ import {
   Search,
   Cpu,
   Database,
-  Radio,
   AlertTriangle,
-  ChevronRight,
-  ShieldCheck,
 } from "lucide-react";
 
 interface SidebarLink {
@@ -31,7 +28,7 @@ const NAVIGATION_LINKS: SidebarLink[] = [
   { name: "Clientes CRM", href: "/clientes", icon: Users },
   { name: "Red FTTH (OLT/NAP)", href: "/nodos", icon: Network, badge: "Alerta" },
   { name: "Tickets de Soporte", href: "/tickets", icon: LifeBuoy, badge: "Activo" },
-  { name: "Consola Nora Copilot", href: "/nora", icon: Bot, badge: "AI N3" },
+  { name: "Consola Carale", href: "/nora", icon: Bot, badge: "AI N3" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -40,7 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-100 overflow-hidden font-sans">
-      {/* Sidebar Lateral de Alta Fidelidad - CARALE by Nora */}
+      {/* Sidebar Lateral - CARALE by Nora */}
       <aside className="w-64 border-r border-slate-800/90 bg-slate-900/95 flex flex-col justify-between shrink-0 shadow-2xl backdrop-blur-md">
         <div>
           {/* Logo y Branding CARALE by Nora */}
@@ -107,13 +104,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
         </div>
 
-        {/* Footer Sidebar con Telemetría de Servidores */}
-        <div className="p-3.5 border-t border-slate-800/80 bg-slate-950/30 space-y-2.5">
-          <div className="rounded-xl border border-slate-800/90 bg-slate-900/80 p-3">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-200 mb-1.5">
+        {/* Footer Sidebar con Firma Oficial de la Agencia */}
+        <div className="p-3.5 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
+          <div className="rounded-xl border border-slate-800/90 bg-slate-900/80 p-2.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-200 mb-1">
               <div className="flex items-center gap-1.5">
                 <Cpu className="h-3.5 w-3.5 text-cyan-400" />
-                <span>Nora AI Engine</span>
+                <span>Carale AI Core</span>
               </div>
               <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -125,8 +122,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="text-cyan-400 font-semibold">sa-east-1</span>
             </div>
           </div>
-          <div className="text-center text-[10px] text-slate-500 font-medium">
-            CARALE ISP Core • <span className="text-slate-400">v2.4 Production</span>
+
+          {/* Firma Oficial de la Agencia Desarrolladora */}
+          <div className="px-1 text-[10px] text-zinc-500 leading-relaxed space-y-0.5 border-t border-slate-800/70 pt-2.5">
+            <div className="font-semibold text-zinc-400">
+              Desarrollado por: <span className="text-slate-300">Nexora One</span>
+            </div>
+            <div>
+              Soporte: <a href="tel:3786414533" className="hover:text-cyan-400 text-zinc-400 transition font-mono">3786414533</a>
+            </div>
+            <div className="truncate">
+              Email: <a href="mailto:nexoraone@nexativanews.com.ar" className="hover:text-cyan-400 text-zinc-400 transition font-mono">nexoraone@nexativanews.com.ar</a>
+            </div>
           </div>
         </div>
       </aside>
