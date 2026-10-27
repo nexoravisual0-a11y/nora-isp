@@ -39,7 +39,7 @@ export default function NodosPage() {
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              {isLoading ? "Cargando..." : `${nodos.length} Nodos Activos en Neon`}
+              {isLoading ? "Cargando..." : `${nodos.length} Nodos Activos en Sistema Central`}
             </span>
           </div>
           <p className="text-sm text-slate-400 mt-1">
@@ -89,7 +89,7 @@ export default function NodosPage() {
           <div className="flex flex-col items-center justify-center gap-2">
             <Loader2 className="h-6 w-6 animate-spin text-cyan-400" />
             <span className="text-xs text-slate-400 font-medium">
-              Cargando topología de red FTTH desde Neon Serverless Postgres...
+              Cargando topología de red FTTH desde la base de datos central...
             </span>
           </div>
         </div>

@@ -116,7 +116,7 @@ async function ejecutarCrearTicket(args: {
     asunto: args.asunto,
     prioridad: args.prioridad,
     estado: "Abierto",
-    mensaje: `Ticket ${ticketId} registrado en Neon DB con prioridad ${args.prioridad} y asignado a guardia técnica.`,
+    mensaje: `Ticket ${ticketId} registrado en la Base de Datos Central con prioridad ${args.prioridad} y asignado a guardia técnica.`,
   };
 }
 
@@ -242,7 +242,7 @@ async function buildRealtimeContextAndPayload(
     ]);
 
     const lineasContexto: string[] = [
-      "[TELEMETRÍA EN VIVO • NEON POSTGRES (sa-east-1)]",
+      "[TELEMETRÍA EN VIVO • BASE DE DATOS CENTRAL]",
       `• Padrón General: ${totalStats[0]?.total_clientes ?? 0} abonados registrados | ${totalStats[0]?.tickets_abiertos ?? 0} tickets abiertos actualmente.`,
     ];
 
@@ -286,7 +286,7 @@ async function buildRealtimeContextAndPayload(
       technicalPayload,
     };
   } catch (err) {
-    console.error("[ERROR CONTEXTO NEON]:", err);
+    console.error("[ERROR CONTEXTO CORE]:", err);
     return { contextMessage: null, technicalPayload: null };
   }
 }
@@ -424,8 +424,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           {
             error:
-              "Groq rechazó la API key (401). Verifica que GROQ_API_KEY en .env sea válida y reinicia el servidor.",
-            code: "GROQ_UNAUTHORIZED",
+              "El Motor de IA rechazó la clave de autenticación (401). Verifica la configuración en .env y reinicia el servidor.",
+            code: "AI_UNAUTHORIZED",
           },
           { status: 401 }
         );
@@ -433,14 +433,14 @@ export async function POST(req: NextRequest) {
       if (error.status === 429) {
         return NextResponse.json(
           {
-            error: "Límite de uso de Groq alcanzado (429). Espera unos segundos y vuelve a intentar.",
-            code: "GROQ_RATE_LIMIT",
+            error: "Límite de uso del Motor de IA alcanzado (429). Espera unos segundos y vuelve a intentar.",
+            code: "AI_RATE_LIMIT",
           },
           { status: 429 }
         );
       }
       return NextResponse.json(
-        { error: `Error de Groq (${error.status ?? "desconocido"}): ${error.message}`, code: "GROQ_ERROR" },
+        { error: `Error del Motor de IA (${error.status ?? "desconocido"}): ${error.message}`, code: "AI_ERROR" },
         { status: error.status ?? 502 }
       );
     }

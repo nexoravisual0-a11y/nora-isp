@@ -118,8 +118,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </span>
             </div>
             <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono">
-              <span>Neon Postgres</span>
-              <span className="text-cyan-400 font-semibold">sa-east-1</span>
+              <span>Base de Datos Central</span>
+              <span className="text-cyan-400 font-semibold">Online</span>
             </div>
           </div>
 
@@ -160,7 +160,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Pill de Base de Datos */}
             <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
               <Database className="h-3.5 w-3.5" />
-              <span>Neon DB Sincronizada</span>
+              <span>Core Sincronizado</span>
             </div>
 
             {/* Notificaciones */}

@@ -47,7 +47,7 @@ export default async function DashboardSummaryPage() {
     stats.ticketsAbiertos = tAbiertos[0]?.count ?? 0;
     nodosCriticos = criticosList as typeof nodosCriticos;
   } catch (err: unknown) {
-    console.error("[ERROR NEON DASHBOARD]:", err);
+    console.error("[ERROR CORE DASHBOARD]:", err);
   }
 
   return (
@@ -60,7 +60,7 @@ export default async function DashboardSummaryPage() {
               Panel General de Control (NOC & ERP)
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
-              Neon Postgres Conectado
+              Base de Datos Central Conectada
             </span>
           </div>
           <p className="text-sm text-slate-400 mt-1">
@@ -96,7 +96,7 @@ export default async function DashboardSummaryPage() {
               <TrendingUp className="h-3 w-3 mr-0.5" /> En vivo
             </span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-400">Abonados en base de datos Neon</p>
+          <p className="mt-2 text-[11px] text-slate-400">Abonados en Base de Datos Central</p>
         </div>
 
         {/* Card 2: Clientes Morosos */}
@@ -265,7 +265,7 @@ export default async function DashboardSummaryPage() {
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400">Cerebro Carale:</span>
               <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Conectado a Neon DB
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Conectado a Base de Datos Central
               </span>
             </div>
           </div>

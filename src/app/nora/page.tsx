@@ -44,7 +44,7 @@ function CaraleChatInner() {
     {
       role: "assistant",
       content:
-        "Hola, soy Carale, el asistente inteligente de Carale Internet. Estoy conectado a la base de datos de producción en Neon para auditar clientes, telemetría de cajas NAP/OLT o abrir tickets técnicos de forma autónoma.",
+        "Hola, soy Carale, el asistente inteligente de Carale Internet. Estoy conectado a la Base de Datos Central vía Core API para auditar clientes, telemetría de cajas NAP/OLT o abrir tickets técnicos de forma autónoma.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -130,11 +130,11 @@ function CaraleChatInner() {
             <div className="flex items-center gap-2">
               <h1 className="text-sm font-semibold text-white">Carale (Nivel 3 FTTH & ERP)</h1>
               <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Neon DB Conectado
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Core DB Conectado
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Persistencia real en PostgreSQL • Telemetría óptica viva • Creación autónoma de tickets
+              Persistencia en Sistema Central • Telemetría óptica viva • Creación autónoma de tickets
             </p>
           </div>
         </div>
@@ -142,8 +142,8 @@ function CaraleChatInner() {
         {/* Indicador de Estado del Sistema */}
         <div className="flex items-center gap-2.5 bg-slate-800/60 px-3.5 py-1.5 rounded-xl border border-slate-700/80 text-xs text-slate-300">
           <Database className="h-4 w-4 text-cyan-400" />
-          <span className="font-medium text-slate-200">Motor Groq Qwen 3.8</span>
-          <span className="text-[10px] text-slate-400 font-mono">sa-east-1</span>
+          <span className="font-medium text-slate-200">Motor de IA</span>
+          <span className="text-[10px] text-slate-400 font-mono">Red Neuronal</span>
         </div>
       </div>
 
@@ -205,7 +205,7 @@ function CaraleChatInner() {
                           </h4>
                         </div>
                         <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                          {msg.technicalPayload.tipo === "ticket" ? "Neon DB Ticket" : "Neon Telemetría"}
+                          {msg.technicalPayload.tipo === "ticket" ? "Core DB Ticket" : "Core Telemetría"}
                         </span>
                       </div>
 
@@ -263,7 +263,7 @@ function CaraleChatInner() {
                   <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:200ms]" />
                   <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:400ms]" />
                   <span className="ml-2 text-xs text-slate-300 font-medium">
-                    Carale está consultando la telemetría en Neon Postgres y razonando la solución...
+                    Carale está consultando la telemetría en la Base de Datos Central y razonando la solución...
                   </span>
                 </div>
               </div>

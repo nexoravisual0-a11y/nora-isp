@@ -35,7 +35,7 @@ const NORA_WHATSAPP_TOOLS: Groq.Chat.ChatCompletionTool[] = [
     function: {
       name: "crear_ticket_soporte",
       description:
-        "Abre y registra de forma autónoma un nuevo ticket de soporte técnico en Neon Postgres cuando el abonado de WhatsApp sufre una falla técnica no resoluble remotamente.",
+        "Abre y registra de forma autónoma un nuevo ticket de soporte técnico en la Base de Datos Central cuando el abonado de WhatsApp sufre una falla técnica no resoluble remotamente.",
       parameters: {
         type: "object",
         properties: {
@@ -83,7 +83,7 @@ async function ejecutarCrearTicket(args: {
     asunto: args.asunto,
     prioridad: args.prioridad,
     estado: "Abierto",
-    mensaje: `Ticket ${ticketId} registrado en Neon DB y derivado a cuadrilla técnica.`,
+    mensaje: `Ticket ${ticketId} registrado en la Base de Datos Central y derivado a cuadrilla técnica.`,
   };
 }
 
