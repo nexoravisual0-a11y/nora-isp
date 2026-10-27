@@ -4,8 +4,8 @@ import "./globals.css";
 import DashboardLayout from "@/components/DashboardLayout";
 
 export const metadata: Metadata = {
-  title: "Nexora ISP • Core Cloud ERP & Soporte FTTH",
-  description: "Sistema integral de gestión ISP con motor de IA Nora Nivel 3",
+  title: "CARALE by Nora • Core Cloud ERP & Soporte FTTH",
+  description: "Sistema integral de gestión ISP con motor de IA Nora Nivel 3 y persistencia Neon Serverless Postgres",
 };
 
 export default function RootLayout({

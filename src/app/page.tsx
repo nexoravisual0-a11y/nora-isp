@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import {
@@ -13,19 +11,60 @@ import {
   Zap,
   TrendingUp,
 } from "lucide-react";
-import { MOCK_KPIS, MOCK_CLIENTES, MOCK_NODOS } from "@/lib/mock-data";
+import { sql } from "@/lib/db";
 
-export default function DashboardSummaryPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DashboardSummaryPage() {
+  let stats = {
+    clientesActivos: 0,
+    clientesMorosos: 0,
+    nodosCaidos: 0,
+    ticketsAbiertos: 0,
+  };
+
+  let nodosCriticos: Array<{
+    id: string;
+    nombre: string;
+    estado: string;
+    potencia_salida_dbm: number | null;
+    ubicacion: string | null;
+    atenuacion_promedio: string | null;
+  }> = [];
+
+  try {
+    const [cTotal, cMorosos, nCriticos, tAbiertos, criticosList] = await Promise.all([
+      sql`SELECT count(*)::int as count FROM clientes;`,
+      sql`SELECT count(*)::int as count FROM clientes WHERE estado_facturacion = 'Moroso';`,
+      sql`SELECT count(*)::int as count FROM nodos WHERE estado = 'Critical';`,
+      sql`SELECT count(*)::int as count FROM tickets WHERE estado = 'Abierto';`,
+      sql`SELECT id, nombre, estado, potencia_salida_dbm, ubicacion, atenuacion_promedio FROM nodos WHERE estado = 'Critical' LIMIT 5;`,
+    ]);
+
+    stats.clientesActivos = cTotal[0]?.count ?? 0;
+    stats.clientesMorosos = cMorosos[0]?.count ?? 0;
+    stats.nodosCaidos = nCriticos[0]?.count ?? 0;
+    stats.ticketsAbiertos = tAbiertos[0]?.count ?? 0;
+    nodosCriticos = criticosList as typeof nodosCriticos;
+  } catch (err: unknown) {
+    console.error("[ERROR NEON DASHBOARD]:", err);
+  }
+
   return (
     <div className="p-8 space-y-8 max-w-7xl mx-auto">
       {/* Bienvenida y Status Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            Panel General de Control (NOC & ERP)
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-white">
+              Panel General de Control (NOC & ERP)
+            </h1>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+              Neon Postgres Conectado
+            </span>
+          </div>
           <p className="text-sm text-slate-400 mt-1">
-            Supervisión en tiempo real de infraestructura FTTH, clientes PPPoE y salud de red.
+            Supervisión en tiempo real de infraestructura FTTH, clientes PPPoE y telemetría óptica persistida.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -44,20 +83,20 @@ export default function DashboardSummaryPage() {
         {/* Card 1: Clientes Activos */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">Clientes Activos</span>
+            <span className="text-xs font-medium">Clientes Registrados</span>
             <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
               <Users className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-white tracking-tight">
-              {MOCK_KPIS.clientesActivos.toLocaleString("es-AR")}
+              {stats.clientesActivos}
             </span>
             <span className="text-xs font-semibold text-emerald-400 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-0.5" /> +4.2%
+              <TrendingUp className="h-3 w-3 mr-0.5" /> En vivo
             </span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-400">Total servicios con PPPoE provisionado</p>
+          <p className="mt-2 text-[11px] text-slate-400">Abonados en base de datos Neon</p>
         </div>
 
         {/* Card 2: Clientes Morosos */}
@@ -70,9 +109,13 @@ export default function DashboardSummaryPage() {
           </div>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-white tracking-tight">
-              {MOCK_KPIS.clientesMorosos}
+              {stats.clientesMorosos}
             </span>
-            <span className="text-xs text-slate-400">1.8% del padrón</span>
+            <span className="text-xs text-slate-400">
+              {stats.clientesActivos > 0
+                ? `${Math.round((stats.clientesMorosos / stats.clientesActivos) * 100)}% del padrón`
+                : "0%"}
+            </span>
           </div>
           <p className="mt-2 text-[11px] text-amber-400/90">
             Pendientes de corte o suspensión automática
@@ -82,18 +125,28 @@ export default function DashboardSummaryPage() {
         {/* Card 3: Nodos OLT / Red */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">Nodos OLT Caídos</span>
+            <span className="text-xs font-medium">Nodos en Estado Crítico</span>
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Network className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-emerald-400 tracking-tight">
-              {MOCK_KPIS.nodosOltCaidos}
+            <span
+              className={`text-3xl font-extrabold tracking-tight ${
+                stats.nodosCaidos > 0 ? "text-rose-400" : "text-emerald-400"
+              }`}
+            >
+              {stats.nodosCaidos}
             </span>
-            <span className="text-xs font-semibold text-emerald-400">100% Operativo</span>
+            <span
+              className={`text-xs font-semibold ${
+                stats.nodosCaidos > 0 ? "text-rose-400" : "text-emerald-400"
+              }`}
+            >
+              {stats.nodosCaidos > 0 ? "Requiere Cuadrilla" : "100% Operativo"}
+            </span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-400">2 OLTs Huawei / FiberHome en línea</p>
+          <p className="mt-2 text-[11px] text-slate-400">Equipos de distribución óptica</p>
         </div>
 
         {/* Card 4: Tickets de Soporte */}
@@ -106,11 +159,11 @@ export default function DashboardSummaryPage() {
           </div>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="text-3xl font-extrabold text-white tracking-tight">
-              {MOCK_KPIS.ticketsAbiertos}
+              {stats.ticketsAbiertos}
             </span>
-            <span className="text-xs text-rose-400 font-medium">1 Urgente N3</span>
+            <span className="text-xs text-cyan-400 font-medium">Gestión Nora IA</span>
           </div>
-          <p className="mt-2 text-[11px] text-slate-400">Tiempo prom. resolución: 18 min</p>
+          <p className="mt-2 text-[11px] text-slate-400">Reclamos técnicos persistidos</p>
         </div>
       </div>
 
@@ -129,63 +182,53 @@ export default function DashboardSummaryPage() {
               href="/nodos"
               className="text-xs font-medium text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
             >
-              <span>Ver todas las cajas NAP</span>
+              <span>Ver todos los nodos FTTH</span>
               <ArrowUpRight className="h-3 w-3" />
             </Link>
           </div>
 
           <div className="space-y-3">
-            {/* Alerta 1 */}
-            <div className="p-4 rounded-xl border border-rose-500/30 bg-rose-950/20 flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 mt-0.5">
-                  <AlertCircle className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-rose-200">
-                      Caja NAP-04 (Barrio Centro)
-                    </span>
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300">
-                      Crítico
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Lectura óptica: <strong>-30.5 dBm</strong>. Pérdida severa de potencia detectada en
-                    splitter de segundo nivel. ONU de cliente María Elena desconectada por atenuación.
-                  </p>
-                </div>
+            {nodosCriticos.length === 0 ? (
+              <div className="p-4 rounded-xl border border-emerald-500/20 bg-emerald-950/20 flex items-center gap-3 text-emerald-300 text-xs">
+                <Wifi className="h-4 w-4 shrink-0 text-emerald-400" />
+                <span>Todos los nodos FTTH y OLTs operan dentro del rango de potencia óptica normal.</span>
               </div>
-              <Link
-                href="/nora"
-                className="shrink-0 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-xs font-medium text-rose-300 hover:bg-rose-500/20 transition"
-              >
-                Diagnosticar con IA
-              </Link>
-            </div>
-
-            {/* Alerta 2 */}
-            <div className="p-4 rounded-xl border border-slate-800 bg-slate-800/40 flex items-start justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-400 mt-0.5">
-                  <Wifi className="h-4 w-4" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-slate-200">
-                      OLT Huawei EA5800 - Pon 1/1 y 1/2
-                    </span>
-                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                      Normal
-                    </span>
+            ) : (
+              nodosCriticos.map((nodo) => (
+                <div
+                  key={nodo.id}
+                  className="p-4 rounded-xl border border-rose-500/30 bg-rose-950/20 flex items-start justify-between gap-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-rose-500/20 text-rose-400 mt-0.5">
+                      <AlertCircle className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-rose-200">
+                          {nodo.nombre}
+                        </span>
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300">
+                          {nodo.estado}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-400 mt-1">
+                        Lectura óptica: <strong>{nodo.potencia_salida_dbm} dBm</strong> en {nodo.ubicacion || "red"}.{" "}
+                        {nodo.atenuacion_promedio || "Pérdida severa de potencia detectada."}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Potencia de transmisión SFP+ en +5.2 dBm. Tráfico nominal a 4.1 Gbps sin drop de paquetes.
-                  </p>
+                  <Link
+                    href={`/nora?prompt=${encodeURIComponent(
+                      `Diagnostica el nodo crítico ${nodo.nombre} (${nodo.id}) que reporta ${nodo.potencia_salida_dbm} dBm.`
+                    )}`}
+                    className="shrink-0 px-3 py-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 text-xs font-medium text-rose-300 hover:bg-rose-500/20 transition"
+                  >
+                    Diagnosticar con IA
+                  </Link>
                 </div>
-              </div>
-              <span className="text-xs text-slate-500 self-center">Estable</span>
-            </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -222,7 +265,7 @@ export default function DashboardSummaryPage() {
             <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400">Cerebro Nora ISP:</span>
               <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" /> Modo Standby NOC
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" /> Conectado a Neon DB
               </span>
             </div>
           </div>

@@ -5,18 +5,35 @@ import { useSearchParams } from "next/navigation";
 import {
   Send,
   Database,
-  Sparkles,
   Bot,
   User,
-  CheckCircle,
   AlertCircle,
+  Activity,
+  CheckCircle2,
+  LifeBuoy,
+  Network,
+  Wifi,
   Zap,
 } from "lucide-react";
-import { MOCK_CLIENTES, MOCK_NODOS, MOCK_TICKETS, MOCK_KPIS } from "@/lib/mock-data";
+
+export interface TechnicalItem {
+  label: string;
+  valor: string;
+  alerta?: boolean;
+  critico?: boolean;
+}
+
+export interface TechnicalPayload {
+  tipo: "cliente" | "nodo" | "ticket";
+  titulo: string;
+  subtitulo?: string;
+  datos: TechnicalItem[];
+}
 
 interface Message {
   role: "user" | "assistant";
   content: string;
+  technicalPayload?: TechnicalPayload | null;
 }
 
 function NoraChatInner() {
@@ -27,13 +44,12 @@ function NoraChatInner() {
     {
       role: "assistant",
       content:
-        "Hola, soy Nora, el núcleo de Inteligencia Artificial (CRM, ERP y Soporte Nivel 3) de Nexora ISP. Estoy lista para diagnosticar fallas de fibra FTTH, auditar potencias de OLT/NAP, o gestionar trámites y cobranzas de abonados.",
+        "Hola, soy Nora, el núcleo de Inteligencia Artificial (CRM, ERP y Soporte Nivel 3) de CARALE by Nora. Estoy conectada a la base de datos PostgreSQL de producción en Neon para auditar clientes, telemetría de cajas NAP/OLT o abrir tickets técnicos de forma autónoma.",
     },
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [injectContext, setInjectContext] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,59 +57,57 @@ function NoraChatInner() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  // Si viene con un prompt por URL (desde un botón del Dashboard o Clientes), lo cargamos
   useEffect(() => {
     if (initialPrompt && !input) {
       setInput(initialPrompt);
     }
   }, [initialPrompt]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     const trimmedInput = input.trim();
     if (!trimmedInput || isLoading) return;
 
     setErrorMsg(null);
 
-    // El estado visual solo contiene lo que el operador escribió
-    const updatedMessages: Message[] = [...messages, { role: "user", content: trimmedInput }];
+    const updatedMessages: Message[] = [
+      ...messages,
+      { role: "user", content: trimmedInput },
+    ];
 
     setMessages(updatedMessages);
     setInput("");
     setIsLoading(true);
 
-    // El contexto del ERP viaja aparte y el backend lo inyecta como mensaje de sistema.
-    // Se envía en cada petición mientras el interruptor esté activo (no queda en el historial).
-    const contextPayload = injectContext
-      ? {
-          empresa: "Nexora ISP",
-          kpis: MOCK_KPIS,
-          clientesRegistrados: MOCK_CLIENTES,
-          infraestructuraNodos: MOCK_NODOS,
-          ticketsActivos: MOCK_TICKETS,
-        }
-      : undefined;
-
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: updatedMessages, contextPayload }),
+        body: JSON.stringify({
+          messages: updatedMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "Error al comunicarse con Nora ISP");
+        throw new Error(data?.error || "Error al comunicarse con Nora IA.");
       }
 
       if (data.content) {
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: data.content },
+          {
+            role: "assistant",
+            content: data.content,
+            technicalPayload: data.technicalPayload || null,
+          },
         ]);
       } else {
-        throw new Error("Respuesta vacía del servidor.");
+        throw new Error("Respuesta vacía del motor de IA.");
       }
     } catch (err: unknown) {
       console.error("[NORA_CHAT_ERROR]:", err);
@@ -114,47 +128,28 @@ function NoraChatInner() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-semibold text-white">Nora Copilot (Nivel 3 FTTH & ERP)</h1>
+              <h1 className="text-sm font-semibold text-white">Consola Nora (Nivel 3 FTTH & ERP)</h1>
               <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Conectado a Groq
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Neon DB Conectado
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
-              Modo adaptativo: Atención empática a abonados y precisión técnica para cuadrillas de fibra
+              Persistencia real en PostgreSQL • Telemetría óptica viva • Creación autónoma de tickets
             </p>
           </div>
         </div>
 
-        {/* Interruptor de Inyección de Contexto Simulado */}
-        <div className="flex items-center gap-3 bg-slate-800/60 px-3.5 py-1.5 rounded-xl border border-slate-700/80">
-          <Database className={`h-4 w-4 ${injectContext ? "text-cyan-400" : "text-slate-400"}`} />
-          <div className="text-left">
-            <span className="block text-xs font-semibold text-slate-200">
-              Inyectar Contexto Simulado (ERP Sandbox)
-            </span>
-            <span className="block text-[10px] text-slate-400">
-              {injectContext ? "Incluye Clientes, Cajas NAP y OLTs" : "Sin contexto del ERP"}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setInjectContext(!injectContext)}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              injectContext ? "bg-cyan-600" : "bg-slate-700"
-            }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                injectContext ? "translate-x-5" : "translate-x-0"
-              }`}
-            />
-          </button>
+        {/* Indicador de Estado del Sistema */}
+        <div className="flex items-center gap-2.5 bg-slate-800/60 px-3.5 py-1.5 rounded-xl border border-slate-700/80 text-xs text-slate-300">
+          <Database className="h-4 w-4 text-cyan-400" />
+          <span className="font-medium text-slate-200">Motor Groq Qwen 3.8</span>
+          <span className="text-[10px] text-slate-400 font-mono">sa-east-1</span>
         </div>
       </div>
 
       {/* Área de Mensajes */}
       <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
-        <div className="mx-auto max-w-4xl space-y-4">
+        <div className="mx-auto max-w-4xl space-y-5">
           {messages.map((msg, index) => {
             const isUser = msg.role === "user";
             return (
@@ -172,14 +167,76 @@ function NoraChatInner() {
                   {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                 </div>
 
-                <div
-                  className={`max-w-[85%] sm:max-w-[78%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed shadow-sm ${
-                    isUser
-                      ? "bg-indigo-600 text-white rounded-tr-none"
-                      : "bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none whitespace-pre-wrap"
-                  }`}
-                >
-                  {msg.content}
+                <div className={`max-w-[85%] sm:max-w-[78%] space-y-3`}>
+                  {/* Burbuja de Texto */}
+                  <div
+                    className={`rounded-2xl px-5 py-3.5 text-sm leading-relaxed shadow-sm ${
+                      isUser
+                        ? "bg-indigo-600 text-white rounded-tr-none"
+                        : "bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none whitespace-pre-wrap"
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+
+                  {/* Tarjeta Embebida (technicalPayload) */}
+                  {!isUser && msg.technicalPayload && (
+                    <div className="rounded-2xl border border-slate-700/80 bg-slate-900/90 p-4 shadow-xl shadow-cyan-950/20 backdrop-blur">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2.5 mb-3">
+                        <div className="flex items-center gap-2">
+                          {msg.technicalPayload.tipo === "cliente" ? (
+                            <Wifi className="h-4 w-4 text-cyan-400" />
+                          ) : msg.technicalPayload.tipo === "ticket" ? (
+                            <LifeBuoy className="h-4 w-4 text-amber-400" />
+                          ) : (
+                            <Network className="h-4 w-4 text-emerald-400" />
+                          )}
+                          <h4 className="text-xs font-bold text-white">
+                            {msg.technicalPayload.titulo}
+                          </h4>
+                        </div>
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
+                          {msg.technicalPayload.tipo === "ticket" ? "Neon DB Ticket" : "Neon Telemetría"}
+                        </span>
+                      </div>
+
+                      {msg.technicalPayload.subtitulo && (
+                        <p className="text-[11px] text-slate-400 mb-3 font-mono">
+                          {msg.technicalPayload.subtitulo}
+                        </p>
+                      )}
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+                        {msg.technicalPayload.datos.map((item, i) => (
+                          <div
+                            key={i}
+                            className={`p-2 rounded-xl border ${
+                              item.critico
+                                ? "bg-rose-950/30 border-rose-500/40 text-rose-300"
+                                : item.alerta
+                                ? "bg-amber-950/30 border-amber-500/40 text-amber-300"
+                                : "bg-slate-800/50 border-slate-700/60 text-slate-200"
+                            }`}
+                          >
+                            <span className="block text-[10px] text-slate-400 font-medium">
+                              {item.label}
+                            </span>
+                            <span
+                              className={`font-semibold font-mono text-[11px] truncate block mt-0.5 ${
+                                item.critico
+                                  ? "text-rose-400 font-bold"
+                                  : item.alerta
+                                  ? "text-amber-400 font-bold"
+                                  : "text-slate-100"
+                              }`}
+                            >
+                              {item.valor}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -197,7 +254,7 @@ function NoraChatInner() {
                   <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:200ms]" />
                   <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:400ms]" />
                   <span className="ml-2 text-xs text-slate-300 font-medium">
-                    Nora está calculando telemetría óptica y evaluando el contexto...
+                    Nora está consultando la telemetría en Neon Postgres y razonando la solución...
                   </span>
                 </div>
               </div>
@@ -217,13 +274,13 @@ function NoraChatInner() {
 
       {/* Input de Mensajes */}
       <footer className="border-t border-slate-800 bg-slate-900/80 p-4 backdrop-blur shrink-0">
-        <form onSubmit={handleSubmit} className="mx-auto max-w-4xl flex items-center gap-2">
+        <form onSubmit={handleSendMessage} className="mx-auto max-w-4xl flex items-center gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
-            placeholder="Pregúntale a Nora por un abonado, atenuación en una NAP, o comando MikroTik..."
+            placeholder="Pregúntale a Nora por un abonado, atenuación en una NAP, o solicita abrir un ticket..."
             className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 transition"
           />
           <button
@@ -242,7 +299,7 @@ function NoraChatInner() {
 
 export default function NoraCopilotPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-xs text-slate-400">Cargando Nora Copilot...</div>}>
+    <Suspense fallback={<div className="p-8 text-xs text-slate-400">Cargando Consola Nora...</div>}>
       <NoraChatInner />
     </Suspense>
   );
