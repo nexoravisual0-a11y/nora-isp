@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
@@ -36,8 +36,21 @@ const NAVIGATION_LINKS: SidebarLink[] = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
   const [showNotification, setShowNotification] = useState(true);
   const [showQrModal, setShowQrModal] = useState(false);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && searchTerm.trim()) {
+      const term = searchTerm.trim();
+      setSearchTerm("");
+      router.push(
+        '/nora?prompt=Busca en la base de datos la siguiente información, cliente o equipo: ' +
+          encodeURIComponent(term)
+      );
+    }
+  };
 
   // Si estamos en el portal público, renderizamos sin el layout del NOC interno
   if (pathname === "/portal") {
@@ -114,6 +127,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </Link>
               );
             })}
+
+            {/* Acceso Comercial / Demostración QR Portal en Menú Lateral */}
+            <div className="pt-2 border-t border-slate-800/60">
+              <button
+                type="button"
+                onClick={() => setShowQrModal(true)}
+                className="w-full group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 border border-dashed border-slate-800 hover:border-cyan-500/40 transition-all duration-150"
+                title="Generar QR para demostraciones comerciales"
+              >
+                <div className="flex items-center gap-3">
+                  <QrCode className="h-4 w-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+                  <span>Compartir Portal (QR)</span>
+                </div>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/50 font-mono font-bold">
+                  Demo
+                </span>
+              </button>
+            </div>
           </nav>
         </div>
 
@@ -160,6 +191,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             <input
               type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Buscar cliente, IP, MAC, ONU o caja NAP..."
               className="w-full rounded-xl border border-slate-800 bg-slate-950/70 py-2 pl-9 pr-12 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
             />
@@ -259,9 +293,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <img
                 src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://nora-isp.vercel.app/portal"
                 alt="QR Portal"
-                className="w-full h-full object-contain"
-                width={250}
-                height={250}
+                className="mx-auto rounded-lg"
               />
             </div>
 

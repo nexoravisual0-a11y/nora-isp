@@ -52,20 +52,14 @@ function CaralitaChatInner() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const executedPromptRef = useRef<string | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
 
-  useEffect(() => {
-    if (initialPrompt && !input) {
-      setInput(initialPrompt);
-    }
-  }, [initialPrompt]);
-
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const trimmedInput = input.trim();
+  const executeMessage = async (textToSend: string) => {
+    const trimmedInput = textToSend.trim();
     if (!trimmedInput || isLoading) return;
 
     setErrorMsg(null);
@@ -116,6 +110,18 @@ function CaralitaChatInner() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    if (initialPrompt && executedPromptRef.current !== initialPrompt) {
+      executedPromptRef.current = initialPrompt;
+      executeMessage(initialPrompt);
+    }
+  }, [initialPrompt]);
+
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    await executeMessage(input);
   };
 
   return (
