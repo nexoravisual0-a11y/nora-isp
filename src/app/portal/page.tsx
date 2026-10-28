@@ -25,6 +25,62 @@ import {
   ChevronDown,
 } from "lucide-react";
 
+/**
+ * Hook para detección de scroll y animación fluida con IntersectionObserver
+ */
+function useScrollReveal<T extends HTMLElement = HTMLDivElement>() {
+  const ref = useRef<T>(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(element);
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, isVisible };
+}
+
+function RevealSection({
+  children,
+  className = "",
+  delay = 0,
+  id,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  delay?: number;
+  id?: string;
+}) {
+  const { ref, isVisible } = useScrollReveal();
+  return (
+    <div
+      ref={ref}
+      id={id}
+      style={{ transitionDelay: `${delay}ms` }}
+      className={`transition-all duration-700 ease-out transform ${
+        isVisible
+          ? "opacity-100 translate-y-0"
+          : "opacity-0 translate-y-8 pointer-events-none"
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -81,8 +137,7 @@ export default function CaraleCorporativaUI() {
   };
 
   /**
-   * Misión 2: Cableado del Widget IA (Ventas & Soporte)
-   * Envía la petición real a /api/chat con source: 'portal' y la imagen en Base64 si existe.
+   * Conexión del Widget IA a /api/chat con source: 'portal'
    */
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -96,7 +151,6 @@ export default function CaraleCorporativaUI() {
     let base64Image: string | null = null;
 
     try {
-      // 1. Si hay archivo o imagen, convertir a Base64 con FileReader
       if (selectedFile) {
         base64Image = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -106,7 +160,6 @@ export default function CaraleCorporativaUI() {
         });
       }
 
-      // 2. Construir mensaje de usuario
       const promptText =
         trimmedText ||
         (base64Image
@@ -126,7 +179,6 @@ export default function CaraleCorporativaUI() {
       setSelectedFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      // 3. Petición real al backend inteligente
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -146,7 +198,6 @@ export default function CaraleCorporativaUI() {
         throw new Error(data?.error || "Error al comunicarse con Caralita IA.");
       }
 
-      // 4. Mostrar respuesta comercial o técnica
       if (data.content) {
         setMessages((prev) => [
           ...prev,
@@ -181,7 +232,6 @@ export default function CaraleCorporativaUI() {
       {/* 1. Navbar Institucional Premium */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          {/* Logo y Marca */}
           <Link href="/portal" className="flex items-center gap-3 group">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500 via-teal-500 to-blue-600 font-black text-white text-xl shadow-lg shadow-cyan-500/30 group-hover:scale-105 transition-transform duration-200">
               C
@@ -199,7 +249,6 @@ export default function CaraleCorporativaUI() {
             </div>
           </Link>
 
-          {/* Navegación Desktop */}
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
             <a href="#residencial" className="hover:text-cyan-400 transition">
               Residencial
@@ -218,7 +267,6 @@ export default function CaraleCorporativaUI() {
             </a>
           </nav>
 
-          {/* Botones de Acción */}
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -244,8 +292,8 @@ export default function CaraleCorporativaUI() {
         </div>
       </header>
 
-      {/* 2. Hero Section de Clase Mundial */}
-      <section className="relative z-10 pt-16 pb-24 md:pt-24 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* 2. Hero Section con Smooth Scroll Reveal */}
+      <RevealSection className="relative z-10 pt-16 pb-24 md:pt-24 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-4xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs font-semibold text-cyan-300 shadow-inner">
             <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
@@ -265,7 +313,6 @@ export default function CaraleCorporativaUI() {
             transporte mayorista directo a los principales puntos de intercambio de tráfico.
           </p>
 
-          {/* Botones CTA Principales */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <button
               onClick={() => {
@@ -289,7 +336,6 @@ export default function CaraleCorporativaUI() {
             </button>
           </div>
 
-          {/* Badges de Confianza / Métricas de Red */}
           <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
             <div className="p-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
               <span className="block text-2xl font-black text-cyan-400">99.8%</span>
@@ -317,12 +363,12 @@ export default function CaraleCorporativaUI() {
             </div>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
-      {/* 3. Grilla de Servicios: Los 3 Pilares Corporativos */}
+      {/* 3. Grilla de Servicios con Reveal Fluido */}
       <section id="residencial" className="relative z-10 py-20 bg-slate-900/40 border-y border-slate-800/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+          <RevealSection className="text-center max-w-3xl mx-auto mb-16 space-y-3">
             <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest bg-cyan-950/80 px-3 py-1 rounded-full border border-cyan-800/60">
               Soluciones Integrales de Conectividad
             </span>
@@ -332,11 +378,11 @@ export default function CaraleCorporativaUI() {
             <p className="text-sm sm:text-base text-slate-400">
               Desde hogares de alto rendimiento hasta interconexiones de centros de datos y carriers.
             </p>
-          </div>
+          </RevealSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Tarjeta 1: FTTH Residencial */}
-            <div className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 group">
+            {/* FTTH Residencial */}
+            <RevealSection delay={100} className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 group">
               <div className="space-y-4">
                 <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 group-hover:scale-110 transition-transform">
                   <Wifi className="h-6 w-6" />
@@ -372,10 +418,10 @@ export default function CaraleCorporativaUI() {
                   Consultar Cobertura Barrial
                 </button>
               </div>
-            </div>
+            </RevealSection>
 
-            {/* Tarjeta 2: Enlaces Dedicados B2B (Destacada) */}
-            <div id="empresas" className="relative rounded-3xl border-2 border-cyan-500/60 bg-gradient-to-b from-slate-900 to-slate-950 p-8 flex flex-col justify-between shadow-2xl shadow-cyan-500/20 group">
+            {/* Enlaces Dedicados B2B */}
+            <RevealSection delay={200} className="relative rounded-3xl border-2 border-cyan-500/60 bg-gradient-to-b from-slate-900 to-slate-950 p-8 flex flex-col justify-between shadow-2xl shadow-cyan-500/20 group">
               <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow-md tracking-wider">
                 Misión Crítica
               </div>
@@ -383,7 +429,7 @@ export default function CaraleCorporativaUI() {
                 <div className="h-12 w-12 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-cyan-500/40 group-hover:scale-110 transition-transform">
                   <Building2 className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-white">Enlaces Dedicados B2B</h3>
+                <h3 id="empresas" className="text-xl font-bold text-white">Enlaces Dedicados B2B</h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   Canales 1:1 no compartidos para corporaciones, industrias y entidades financieras
                   con disponibilidad auditada.
@@ -414,15 +460,15 @@ export default function CaraleCorporativaUI() {
                   Solicitar Propuesta Corporativa
                 </button>
               </div>
-            </div>
+            </RevealSection>
 
-            {/* Tarjeta 3: Transporte Mayorista */}
-            <div id="mayorista" className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 flex flex-col justify-between hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 group">
+            {/* Transporte Mayorista */}
+            <RevealSection delay={300} className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 flex flex-col justify-between hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 group">
               <div className="space-y-4">
                 <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-blue-500/20 to-indigo-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30 group-hover:scale-110 transition-transform">
                   <Network className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-bold text-white">Transporte & Mayorista</h3>
+                <h3 id="mayorista" className="text-xl font-bold text-white">Transporte & Mayorista</h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   Interconexión de fibra oscura, lambdas protegidas y capacidad de tránsito IP
                   para operadores de red y cooperativas.
@@ -453,13 +499,13 @@ export default function CaraleCorporativaUI() {
                   Contactar Ingeniería Carrier
                 </button>
               </div>
-            </div>
+            </RevealSection>
           </div>
         </div>
       </section>
 
-      {/* 4. Banner Institucional de Soporte & Autogestión con Caralita */}
-      <section id="infraestructura" className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* 4. Banner Institucional con Scroll Reveal */}
+      <RevealSection id="infraestructura" className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="rounded-3xl border border-slate-800 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-slate-950 p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 backdrop-blur-xl">
           <div className="space-y-4 max-w-2xl">
             <div className="inline-flex items-center gap-2 text-xs font-bold text-cyan-400 bg-cyan-950/80 px-3 py-1 rounded-full border border-cyan-800/60">
@@ -498,9 +544,9 @@ export default function CaraleCorporativaUI() {
             </button>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
-      {/* 5. Footer Corporativo con Firma Oficial */}
+      {/* 5. Tarea 2: Footer Corporativo con Firma Oficial Exacta */}
       <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="space-y-1">
@@ -515,28 +561,26 @@ export default function CaraleCorporativaUI() {
             </p>
           </div>
 
-          <div className="space-y-1">
-            <p className="font-semibold text-slate-300">
-              Desarrollado por: <span className="text-white font-bold">Nexora One</span>
-            </p>
-            <p className="text-[11px] text-slate-500">
-              Soporte Central:{" "}
+          {/* Firma exacta global */}
+          <div className="text-zinc-400 text-center md:text-right text-[11px] leading-relaxed">
+            <div>
+              Desarrollado por: <strong className="text-slate-200">Nexora One</strong> | Soporte:{" "}
               <a href="tel:3786414533" className="text-cyan-400 hover:underline font-mono">
                 3786414533
               </a>{" "}
-              • Email:{" "}
+              | Email:{" "}
               <a
                 href="mailto:nexoraone@nexativanews.com.ar"
                 className="text-cyan-400 hover:underline font-mono"
               >
                 nexoraone@nexativanews.com.ar
               </a>
-            </p>
+            </div>
           </div>
         </div>
       </footer>
 
-      {/* 6. El Rol Estrella: Widget Flotante Premium de Caralita (Abajo a la Derecha) */}
+      {/* 6. El Rol Estrella: Widget Flotante Premium de Caralita */}
       <div className="fixed bottom-6 right-6 z-50">
         {!isChatOpen ? (
           <button
@@ -556,7 +600,6 @@ export default function CaraleCorporativaUI() {
             </div>
           </button>
         ) : (
-          /* Popover / Modal Flotante del Chat */
           <div className="w-[92vw] sm:w-[420px] h-[580px] rounded-3xl border border-slate-700/80 bg-slate-900/95 shadow-2xl backdrop-blur-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header del Chat */}
             <div className="h-16 px-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between shrink-0">
@@ -651,7 +694,6 @@ export default function CaraleCorporativaUI() {
                         <p className="whitespace-pre-wrap">{msg.content}</p>
                       </div>
 
-                      {/* Tarjeta Técnica de Reclamo/Ticket si Caralita lo abre */}
                       {msg.technicalPayload && (
                         <div className="rounded-xl border border-cyan-500/40 bg-slate-950/80 p-2.5 space-y-1.5">
                           <span className="font-bold text-white text-[11px] block">

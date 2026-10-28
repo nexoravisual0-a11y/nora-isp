@@ -18,6 +18,7 @@ import {
   ExternalLink,
   X,
   Wrench,
+  ShieldAlert,
 } from "lucide-react";
 
 interface SidebarLink {
@@ -42,6 +43,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [searchTerm, setSearchTerm] = useState("");
   const [showNotification, setShowNotification] = useState(true);
   const [showQrModal, setShowQrModal] = useState(false);
+  const [showTechQrModal, setShowTechQrModal] = useState(false);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchTerm.trim()) {
@@ -131,19 +133,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })}
 
             {/* Acceso Comercial / Demostración QR Portal en Menú Lateral */}
-            <div className="pt-2 border-t border-slate-800/60">
+            <div className="pt-2 border-t border-slate-800/60 space-y-1.5">
               <button
                 type="button"
                 onClick={() => setShowQrModal(true)}
-                className="w-full group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 border border-dashed border-slate-800 hover:border-cyan-500/40 transition-all duration-150"
+                className="w-full group flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60 border border-dashed border-slate-800 hover:border-cyan-500/40 transition-all duration-150"
                 title="Generar QR para demostraciones comerciales"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <QrCode className="h-4 w-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                   <span>Compartir Portal (QR)</span>
                 </div>
                 <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/50 font-mono font-bold">
                   Demo
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowTechQrModal(true)}
+                className="w-full group flex items-center justify-between px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-200 hover:bg-rose-950/30 border border-dashed border-rose-900/40 hover:border-rose-500/40 transition-all duration-150"
+                title="Acceso seguro exclusivo para Cuadrilla 1"
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldAlert className="h-4 w-4 text-rose-400 group-hover:scale-110 transition-transform" />
+                  <span>QR Cuadrilla 1</span>
+                </div>
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800/60 font-mono font-bold">
+                  NOC
                 </span>
               </button>
             </div>
@@ -170,15 +187,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Firma Oficial de la Agencia Desarrolladora */}
-          <div className="px-1 text-[10px] text-zinc-500 leading-relaxed space-y-0.5 border-t border-slate-800/70 pt-2.5">
-            <div className="font-semibold text-zinc-400">
-              Desarrollado por: <span className="text-slate-300">Nexora One</span>
-            </div>
+          <div className="px-1 text-[10px] text-zinc-400 leading-relaxed border-t border-slate-800/70 pt-2.5">
             <div>
-              Soporte: <a href="tel:3786414533" className="hover:text-cyan-400 text-zinc-400 transition font-mono">3786414533</a>
-            </div>
-            <div className="truncate">
-              Email: <a href="mailto:nexoraone@nexativanews.com.ar" className="hover:text-cyan-400 text-zinc-400 transition font-mono">nexoraone@nexativanews.com.ar</a>
+              Desarrollado por: <strong className="text-slate-200">Nexora One</strong> | Soporte:{" "}
+              <a href="tel:3786414533" className="hover:text-cyan-400 text-zinc-300 transition font-mono">
+                3786414533
+              </a>{" "}
+              | Email:{" "}
+              <a
+                href="mailto:nexoraone@nexativanews.com.ar"
+                className="hover:text-cyan-400 text-zinc-300 transition font-mono"
+              >
+                nexoraone@nexativanews.com.ar
+              </a>
             </div>
           </div>
         </div>
@@ -220,6 +241,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             >
               <QrCode className="h-3.5 w-3.5 text-cyan-400" />
               <span className="hidden sm:inline">Compartir Portal (QR)</span>
+            </button>
+
+            {/* Botón QR Acceso Cuadrilla 1 (Uso Interno) */}
+            <button
+              onClick={() => setShowTechQrModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-xs font-semibold text-rose-300 hover:text-white shadow-sm transition"
+              title="Código QR de autenticación e identidad para Cuadrilla 1"
+            >
+              <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />
+              <span className="hidden sm:inline">QR Acceso Cuadrilla 1</span>
             </button>
 
             {/* Notificaciones */}
@@ -307,6 +338,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-mono hover:underline"
               >
                 <span>https://nora-isp.vercel.app/portal</span>
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal QR Seguridad Técnica Cuadrilla 1 */}
+      {showTechQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="relative w-full max-w-sm rounded-2xl border border-rose-500/50 bg-slate-900/95 shadow-2xl backdrop-blur-2xl p-6 text-slate-100 text-center">
+            <button
+              type="button"
+              onClick={() => setShowTechQrModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              title="Cerrar modal"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-rose-500/20 to-amber-600/20 text-rose-400 border border-rose-500/30 mb-4 shadow-inner">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+
+            <h3 className="text-base font-bold text-white tracking-tight">
+              QR Acceso Cuadrilla 1
+            </h3>
+            <p className="text-xs text-rose-300/90 mt-1 mb-5">
+              Escaneo técnico exclusivo para Javier_C1 con geolocalización y credenciales
+            </p>
+
+            <div className="mx-auto w-[250px] h-[250px] bg-white p-2 rounded-2xl shadow-xl border border-rose-500/40 flex items-center justify-center">
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://nora-isp.vercel.app/tecnicos?tech=Javier_C1"
+                alt="QR Cuadrilla 1"
+                className="mx-auto rounded-lg"
+              />
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-slate-800 space-y-2">
+              <a
+                href="/tecnicos?tech=Javier_C1"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-rose-400 hover:text-rose-300 font-mono hover:underline"
+              >
+                <span>https://nora-isp.vercel.app/tecnicos?tech=Javier_C1</span>
                 <ExternalLink className="h-3 w-3" />
               </a>
             </div>

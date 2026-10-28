@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   MapPin,
   Camera,
@@ -19,6 +20,7 @@ import {
   ChevronLeft,
   Navigation,
   ShieldAlert,
+  UserCheck,
 } from "lucide-react";
 
 export interface TechnicalItem {
@@ -48,7 +50,10 @@ interface CoordenadasGPS {
   precision: number;
 }
 
-export default function TecnicoPWAUI() {
+function TecnicoPWAInner() {
+  const searchParams = useSearchParams();
+  const techParam = searchParams.get("tech") || "";
+
   // Estado de Jornada Técnica y Geolocalización
   const [jornadaActiva, setJornadaActiva] = useState(false);
   const [coordenadasGPS, setCoordenadasGPS] = useState<CoordenadasGPS | null>(null);
@@ -61,8 +66,9 @@ export default function TecnicoPWAUI() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content:
-        "Caralita NOC lista para asistencia en campo. Envía ID de cliente, caja NAP o captura una foto del splitter/power meter para diagnóstico instantáneo.",
+      content: techParam
+        ? `¡Hola ${techParam.replace("_", " ")}! Caralita IA Nivel 3 en línea. Estoy lista para asistirte en campo con telemetría óptica de NAPs, ONUs y apertura de tickets con geolocalización activa.`
+        : "Caralita NOC lista para asistencia en campo. Envía ID de cliente, caja NAP o captura una foto del splitter/power meter para diagnóstico instantáneo.",
     },
   ]);
   const [inputMessage, setInputMessage] = useState("");
@@ -92,12 +98,9 @@ export default function TecnicoPWAUI() {
 
   /**
    * Misión 2: Conexión del Módulo GPS (API Nativa) + Reverse Geocoding
-   * Inicia o finaliza la jornada obteniendo coordenadas reales de geolocalización
-   * y traduciéndolas a calles/barrios mediante la API de Nominatim.
    */
   const handleToggleJornada = () => {
     if (jornadaActiva) {
-      // Finalizar jornada
       setJornadaActiva(false);
       setCoordenadasGPS(null);
       setDireccionLegible(null);
@@ -105,7 +108,6 @@ export default function TecnicoPWAUI() {
       return;
     }
 
-    // Iniciar jornada solicitando permisos nativos del navegador / smartphone
     if (!navigator.geolocation) {
       setErrorGPS("La API de Geolocalización no está soportada en este navegador.");
       return;
@@ -121,7 +123,6 @@ export default function TecnicoPWAUI() {
         const lng = Number(longitude.toFixed(6));
         const prec = Math.round(accuracy);
 
-        // Guardado de coordenadas en crudo para la base de datos y telemetría
         setCoordenadasGPS({
           lat,
           lng,
@@ -130,7 +131,7 @@ export default function TecnicoPWAUI() {
         setJornadaActiva(true);
         setCargandoGPS(false);
 
-        // Reverse Geocoding: Traducir coordenadas a dirección legible
+        // Reverse Geocoding con Nominatim OpenStreetMap
         setCargandoDireccion(true);
         try {
           const res = await fetch(
@@ -209,8 +210,7 @@ export default function TecnicoPWAUI() {
   };
 
   /**
-   * Misión 3: Conexión de IA Visual (Multimodalidad)
-   * Convierte la foto a Base64 mediante FileReader y llama a /api/chat con source: 'noc'.
+   * Misión 3 & 4: Conexión Multimodal e Inyección de Identidad de Cuadrilla
    */
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -224,7 +224,6 @@ export default function TecnicoPWAUI() {
     let base64Image: string | null = null;
 
     try {
-      // 1. Si hay foto adjunta, convertir a Base64 con FileReader
       if (attachedPhoto) {
         base64Image = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
@@ -234,7 +233,6 @@ export default function TecnicoPWAUI() {
         });
       }
 
-      // 2. Armar mensaje del usuario
       const promptText =
         trimmedText ||
         (base64Image
@@ -253,23 +251,23 @@ export default function TecnicoPWAUI() {
       setAttachedPhoto(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      // Inyección de coordenadas GPS y dirección física si la jornada está iniciada
-      let promptEnviado = promptText;
-      if (coordenadasGPS) {
-        const descUbicacion = direccionLegible
-          ? `${direccionLegible} [Lat: ${coordenadasGPS.lat}, Lng: ${coordenadasGPS.lng}, Precisión: ±${coordenadasGPS.precision}m]`
-          : `Lat ${coordenadasGPS.lat}, Lng ${coordenadasGPS.lng} [Precisión: ±${coordenadasGPS.precision}m]`;
-        promptEnviado += `\n[TELEMETRÍA GPS TÉCNICO EN CAMPO: ${descUbicacion}]`;
-      }
+      // Tarea 4: Empaquetar información técnica de forma oculta en el payload para la API
+      const direccionTraducida =
+        direccionLegible ||
+        (coordenadasGPS
+          ? `Lat ${coordenadasGPS.lat}, Lng ${coordenadasGPS.lng} (±${coordenadasGPS.precision}m)`
+          : "Ubicación GPS no reportada");
 
-      // 3. Envío real a /api/chat con source: 'noc'
+      const payloadOculto = `[Técnico: ${techParam || "Desconocido"}, Ubicación: ${direccionTraducida}] - Mensaje: ${promptText}`;
+
+      // Envío a /api/chat con source: 'noc'
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.map((m, idx) => ({
             role: m.role,
-            content: idx === nextMessages.length - 1 ? promptEnviado : m.content,
+            content: idx === nextMessages.length - 1 ? payloadOculto : m.content,
           })),
           source: "noc",
           image: base64Image,
@@ -282,7 +280,6 @@ export default function TecnicoPWAUI() {
         throw new Error(data?.error || "Error al comunicarse con Caralita IA en el NOC.");
       }
 
-      // 4. Mostrar respuesta ultra-pragmática
       if (data.content) {
         setMessages((prev) => [
           ...prev,
@@ -330,7 +327,16 @@ export default function TecnicoPWAUI() {
                 PWA Técnicos
               </span>
             </div>
-            <span className="block text-[10px] text-slate-400">Cuadrilla & Operaciones FTTH</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+              {techParam ? (
+                <span className="flex items-center gap-1 text-cyan-300 font-semibold">
+                  <UserCheck className="h-3 w-3 text-emerald-400" />
+                  {techParam.replace("_", " ")}
+                </span>
+              ) : (
+                <span>Cuadrilla & Operaciones FTTH</span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -357,7 +363,7 @@ export default function TecnicoPWAUI() {
         </div>
       </header>
 
-      {/* Barra de Estado GPS en Vivo con Dirección Legible (Reverse Geocoding) */}
+      {/* Barra de Estado GPS en Vivo con Dirección Legible */}
       {jornadaActiva && coordenadasGPS && (
         <div className="bg-slate-900/90 border-b border-slate-800/90 px-4 py-2 flex items-center justify-between text-xs text-slate-300 backdrop-blur shrink-0 shadow-inner">
           <div className="flex items-center gap-2 min-w-0 pr-2">
@@ -458,7 +464,6 @@ export default function TecnicoPWAUI() {
                       : "bg-slate-900/90 border border-slate-800 text-slate-200 rounded-tl-none backdrop-blur-sm"
                   }`}
                 >
-                  {/* Foto enviada por el usuario */}
                   {msg.photoUrl && (
                     <div className="mb-2.5 rounded-xl overflow-hidden border border-white/20 max-w-xs">
                       <img
@@ -472,7 +477,6 @@ export default function TecnicoPWAUI() {
                   <p className="whitespace-pre-wrap">{msg.content}</p>
                 </div>
 
-                {/* Tarjeta Técnica de Telemetría o Ticket (technicalPayload) */}
                 {msg.technicalPayload && (
                   <div className="rounded-xl border border-cyan-500/30 bg-slate-900/95 p-3 text-xs shadow-lg backdrop-blur space-y-2 max-w-sm">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
@@ -512,7 +516,6 @@ export default function TecnicoPWAUI() {
           );
         })}
 
-        {/* Estado de Carga con Caralita */}
         {isSending && (
           <div className="flex gap-3 max-w-[80%] mr-auto items-center animate-in fade-in">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-cyan-400">
@@ -525,7 +528,6 @@ export default function TecnicoPWAUI() {
           </div>
         )}
 
-        {/* Notificación de Error */}
         {chatError && (
           <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
@@ -566,9 +568,8 @@ export default function TecnicoPWAUI() {
       )}
 
       {/* Barra Inferior Fija para Input y Cámara */}
-      <footer className="p-3 bg-slate-900/95 border-t border-slate-800 backdrop-blur-md shrink-0">
+      <footer className="p-3 bg-slate-900/95 border-t border-slate-800 backdrop-blur-md shrink-0 space-y-2">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          {/* Input de Cámara oculto */}
           <input
             ref={fileInputRef}
             type="file"
@@ -581,7 +582,6 @@ export default function TecnicoPWAUI() {
             }}
           />
 
-          {/* Botón de Captura de Cámara */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -595,7 +595,6 @@ export default function TecnicoPWAUI() {
             <Camera className="h-5 w-5" />
           </button>
 
-          {/* Input de Texto */}
           <input
             type="text"
             value={inputMessage}
@@ -608,7 +607,6 @@ export default function TecnicoPWAUI() {
             className="flex-1 rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
           />
 
-          {/* Botón de Enviar */}
           <button
             type="submit"
             disabled={(!inputMessage.trim() && !attachedPhoto) || isSending}
@@ -618,8 +616,36 @@ export default function TecnicoPWAUI() {
             <Send className="h-5 w-5" />
           </button>
         </form>
+
+        {/* Tarea 2: Branding y Firma Global en PWA */}
+        <div className="text-center text-[10px] text-zinc-500 truncate pt-1 border-t border-slate-800/60">
+          Desarrollado por: <strong className="text-zinc-400">Nexora One</strong> | Soporte:{" "}
+          <a href="tel:3786414533" className="hover:text-cyan-400 text-zinc-400 font-mono">
+            3786414533
+          </a>{" "}
+          | Email:{" "}
+          <a
+            href="mailto:nexoraone@nexativanews.com.ar"
+            className="hover:text-cyan-400 text-zinc-400 font-mono"
+          >
+            nexoraone@nexativanews.com.ar
+          </a>
+        </div>
       </footer>
     </div>
   );
 }
 
+export default function TecnicoPWAUI() {
+  return (
+    <Suspense
+      fallback={
+        <div className="h-screen w-full bg-slate-950 flex items-center justify-center text-cyan-400 text-xs">
+          Cargando PWA Técnicos Carale...
+        </div>
+      }
+    >
+      <TecnicoPWAInner />
+    </Suspense>
+  );
+}
