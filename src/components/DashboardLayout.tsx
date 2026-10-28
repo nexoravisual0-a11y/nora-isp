@@ -17,6 +17,7 @@ import {
   QrCode,
   ExternalLink,
   X,
+  Wrench,
 } from "lucide-react";
 
 interface SidebarLink {
@@ -32,6 +33,7 @@ const NAVIGATION_LINKS: SidebarLink[] = [
   { name: "Red FTTH (OLT/NAP)", href: "/nodos", icon: Network, badge: "Alerta" },
   { name: "Tickets de Soporte", href: "/tickets", icon: LifeBuoy, badge: "Activo" },
   { name: "Consola Caralita", href: "/nora", icon: Bot, badge: "AI N3" },
+  { name: "PWA Técnicos", href: "/tecnicos", icon: Wrench, badge: "Móvil" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -52,8 +54,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  // Si estamos en el portal público, renderizamos sin el layout del NOC interno
-  if (pathname === "/portal") {
+  // Si estamos en el portal público o en la PWA de técnicos, renderizamos sin el layout del NOC interno
+  if (pathname === "/portal" || pathname === "/tecnicos") {
     return (
       <div className="h-full w-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
         {children}

@@ -421,6 +421,7 @@ export async function POST(req: NextRequest) {
       source = "noc",
       model = "qwen/qwen3.8-27b",
       temperature = 0.4,
+      image,
     } = body;
 
     if (!Array.isArray(messages)) {
@@ -436,7 +437,7 @@ export async function POST(req: NextRequest) {
 
     // Misión 2 & 3: Consulta en vivo a Neon y generación de technicalPayload
     const { contextMessage, technicalPayload: initialPayload } =
-      await buildRealtimeContextAndPayload(lastUserMessage, clienteId);
+      await buildRealtimeContextAndPayload(typeof lastUserMessage === "string" ? lastUserMessage : "", clienteId);
 
     let activePayload: TechnicalPayload | null = initialPayload;
 
@@ -444,22 +445,77 @@ export async function POST(req: NextRequest) {
     const selectedSystemPrompt =
       source === "portal" ? CARALITA_PUBLIC_PROMPT : NORA_SYSTEM_PROMPT;
 
-    // Ensamblado de mensajes con System Prompt y memoria viva
-    const conversationMessages: ChatMessage[] = [
+    // Preparar mensajes base con System Prompt y memoria viva
+    const conversationMessages: any[] = [
       { role: "system", content: selectedSystemPrompt },
       ...(contextMessage ? [contextMessage] : []),
-      ...messages.filter((m: ChatMessage) => m.role !== "system"),
     ];
 
-    // Llamada con Function Calling
-    const initialCompletion = await groq.chat.completions.create({
-      messages: conversationMessages as Groq.Chat.ChatCompletionMessageParam[],
-      model,
-      temperature,
-      max_tokens: 800,
-      tools: NORA_TOOLS,
-      tool_choice: "auto",
-    });
+    const rawUserMessages = messages.filter((m: ChatMessage) => m.role !== "system");
+
+    // Inyección multimodal si el cliente/técnico adjuntó una foto o imagen
+    if (image && typeof image === "string" && image.trim().length > 0) {
+      const imageUrl = image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}`;
+      let imageAttached = false;
+
+      for (let i = rawUserMessages.length - 1; i >= 0; i--) {
+        if (rawUserMessages[i].role === "user") {
+          const originalText =
+            typeof rawUserMessages[i].content === "string" ? rawUserMessages[i].content : "";
+          rawUserMessages[i] = {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text:
+                  originalText ||
+                  "Analiza técnicamente esta imagen adjunta capturada por el técnico en campo (red FTTH, caja NAP, splitter, potencia en power meter o conector).",
+              },
+              { type: "image_url", image_url: { url: imageUrl } },
+            ],
+          };
+          imageAttached = true;
+          break;
+        }
+      }
+
+      if (!imageAttached) {
+        rawUserMessages.push({
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "Analiza técnicamente esta imagen adjunta capturada por el técnico en campo (red FTTH, caja NAP, splitter, potencia en power meter o conector).",
+            },
+            { type: "image_url", image_url: { url: imageUrl } },
+          ],
+        });
+      }
+    }
+
+    conversationMessages.push(...rawUserMessages);
+
+    // Llamada con soporte de visión y Function Calling
+    let initialCompletion;
+    try {
+      initialCompletion = await groq.chat.completions.create({
+        messages: conversationMessages as Groq.Chat.ChatCompletionMessageParam[],
+        model,
+        temperature,
+        max_tokens: 800,
+        tools: image ? undefined : NORA_TOOLS,
+        tool_choice: image ? undefined : "auto",
+      });
+    } catch (visionErr) {
+      console.warn("[GROQ VISION/TOOLS FALLBACK]:", visionErr);
+      initialCompletion = await groq.chat.completions.create({
+        messages: conversationMessages as Groq.Chat.ChatCompletionMessageParam[],
+        model: "openai/gpt-oss-120b",
+        temperature,
+        max_tokens: 800,
+      });
+    }
 
     const choice = initialCompletion.choices[0];
     const initialMessage = choice?.message;
