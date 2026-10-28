@@ -14,6 +14,9 @@ import {
   Cpu,
   Database,
   AlertTriangle,
+  QrCode,
+  ExternalLink,
+  X,
 } from "lucide-react";
 
 interface SidebarLink {
@@ -34,6 +37,16 @@ const NAVIGATION_LINKS: SidebarLink[] = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [showNotification, setShowNotification] = useState(true);
+  const [showQrModal, setShowQrModal] = useState(false);
+
+  // Si estamos en el portal público, renderizamos sin el layout del NOC interno
+  if (pathname === "/portal") {
+    return (
+      <div className="h-full w-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-100 overflow-hidden font-sans">
@@ -163,6 +176,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span>Core Sincronizado</span>
             </div>
 
+            {/* Botón Compartir Portal (QR) */}
+            <button
+              onClick={() => setShowQrModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-cyan-300 shadow-sm transition"
+              title="Código QR para acceso de clientes al Portal"
+            >
+              <QrCode className="h-3.5 w-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">Compartir Portal (QR)</span>
+            </button>
+
             {/* Notificaciones */}
             <button
               onClick={() => setShowNotification(!showNotification)}
@@ -207,6 +230,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Contenido Dinámico */}
         <div className="flex-1 overflow-y-auto">{children}</div>
       </div>
+
+      {/* Modal QR Portal Público */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="relative w-full max-w-sm rounded-2xl border border-slate-700/80 bg-slate-900/95 shadow-2xl backdrop-blur-2xl p-6 text-slate-100 text-center">
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              title="Cerrar modal"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 text-cyan-400 border border-cyan-500/30 mb-4 shadow-inner">
+              <QrCode className="h-6 w-6" />
+            </div>
+
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Portal Público de Clientes
+            </h3>
+            <p className="text-xs text-slate-400 mt-1 mb-5">
+              Escanea el código QR para ingresar a la autogestión y soporte con Caralita
+            </p>
+
+            <div className="mx-auto w-[250px] h-[250px] bg-white p-2 rounded-2xl shadow-xl border border-slate-700 flex items-center justify-center">
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://nora-isp.vercel.app/portal"
+                alt="QR Portal"
+                className="w-full h-full object-contain"
+                width={250}
+                height={250}
+              />
+            </div>
+
+            <div className="mt-5 pt-4 border-t border-slate-800 space-y-2">
+              <a
+                href="/portal"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-mono hover:underline"
+              >
+                <span>https://nora-isp.vercel.app/portal</span>
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
