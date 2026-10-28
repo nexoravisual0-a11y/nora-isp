@@ -14,6 +14,18 @@ export interface ClienteFTTH {
   potenciaDbm: number;
 }
 
+export interface NuevoClienteInput {
+  nombre: string;
+  plan: string;
+  ipPppoe: string;
+  cajaNap: string;
+  oltConectada: string;
+  estadoPppoe?: "Conectado" | "Desconectado";
+  estadoFacturacion?: "Al día" | "Moroso" | "Pendiente";
+  potenciaDbm?: number;
+  telefono?: string;
+}
+
 export interface TicketFTTH {
   id: string;
   cliente: string;
@@ -69,6 +81,96 @@ export async function getClientes(): Promise<ClienteFTTH[]> {
   } catch (error) {
     console.error("[SERVER_ACTION getClientes ERROR]:", error);
     throw new Error("No se pudo obtener el listado de clientes de la base de datos.");
+  }
+}
+
+/**
+ * Registra un nuevo abonado en Neon Serverless Postgres.
+ */
+export async function crearCliente(clienteData: NuevoClienteInput): Promise<ClienteFTTH> {
+  try {
+    if (!clienteData.nombre?.trim()) {
+      throw new Error("El nombre del abonado es obligatorio.");
+    }
+    if (!clienteData.plan?.trim()) {
+      throw new Error("El plan de servicio es obligatorio.");
+    }
+    if (!clienteData.ipPppoe?.trim()) {
+      throw new Error("La IP PPPoE es obligatoria.");
+    }
+    if (!clienteData.cajaNap?.trim()) {
+      throw new Error("La Caja NAP es obligatoria.");
+    }
+    if (!clienteData.oltConectada?.trim()) {
+      throw new Error("La OLT conectada es obligatoria.");
+    }
+
+    // Generar ID unívoco (CLI-XXXX)
+    let clienteId = `CLI-${Math.floor(1000 + Math.random() * 9000)}`;
+    const existing = await sql`SELECT id FROM clientes WHERE id = ${clienteId};`;
+    if (existing.length > 0) {
+      clienteId = `CLI-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
+
+    const estadoPppoe = clienteData.estadoPppoe || "Conectado";
+    const estadoFacturacion = clienteData.estadoFacturacion || "Al día";
+    const potenciaDbm = clienteData.potenciaDbm ?? -19.5;
+    const telefono = clienteData.telefono || null;
+
+    const rows = await sql`
+      INSERT INTO clientes (
+        id, 
+        nombre, 
+        plan, 
+        ip_pppoe, 
+        estado_pppoe, 
+        estado_facturacion, 
+        olt_conectada, 
+        caja_nap, 
+        potencia_dbm,
+        telefono
+      )
+      VALUES (
+        ${clienteId},
+        ${clienteData.nombre.trim()},
+        ${clienteData.plan.trim()},
+        ${clienteData.ipPppoe.trim()},
+        ${estadoPppoe},
+        ${estadoFacturacion},
+        ${clienteData.oltConectada.trim()},
+        ${clienteData.cajaNap.trim()},
+        ${potenciaDbm},
+        ${telefono}
+      )
+      RETURNING 
+        id, 
+        nombre, 
+        plan, 
+        ip_pppoe, 
+        estado_pppoe, 
+        estado_facturacion, 
+        olt_conectada, 
+        caja_nap, 
+        potencia_dbm;
+    `;
+
+    const r = rows[0];
+    return {
+      id: String(r.id),
+      nombre: String(r.nombre),
+      plan: String(r.plan),
+      ipPppoe: r.ip_pppoe ? String(r.ip_pppoe) : "Sin asignar",
+      estadoPppoe: (r.estado_pppoe as "Conectado" | "Desconectado") || "Conectado",
+      estadoFacturacion: (r.estado_facturacion as "Al día" | "Moroso" | "Pendiente") || "Al día",
+      oltConectada: r.olt_conectada ? String(r.olt_conectada) : "N/A",
+      cajaNap: r.caja_nap ? String(r.caja_nap) : "N/A",
+      potenciaDbm: r.potencia_dbm !== null ? Number(r.potencia_dbm) : -19.5,
+    };
+  } catch (error) {
+    console.error("[SERVER_ACTION crearCliente ERROR]:", error);
+    throw new Error(
+      error instanceof Error ? error.message : "Error al registrar el nuevo cliente en la base de datos."
+    );
   }
 }
 
