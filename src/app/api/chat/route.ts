@@ -3,6 +3,7 @@ import Groq from "groq-sdk";
 import { groq } from "@/lib/groq";
 import { sql } from "@/lib/db";
 import { NORA_SYSTEM_PROMPT } from "@/lib/nora-prompt";
+import { CARALITA_PUBLIC_PROMPT } from "@/lib/caralita-public-prompt";
 
 export const dynamic = "force-dynamic";
 
@@ -61,14 +62,32 @@ interface NodoRow {
   atenuacion_promedio: string | null;
 }
 
-// Definición de Herramientas para Nora (Function Calling)
+// Definición de Herramientas para Caralita (Function Calling)
 const NORA_TOOLS: Groq.Chat.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "buscar_cliente",
+      description:
+        "Busca los datos de un abonado en la base de datos de Carale Internet mediante su DNI, CUIT, teléfono móvil, ID de cliente o nombre para verificar el estado de su conexión y telemetría óptica.",
+      parameters: {
+        type: "object",
+        properties: {
+          identificador: {
+            type: "string",
+            description: "DNI, CUIT, número de teléfono o ID del cliente (ej. 38123456, +5493786414533, CLI-1045)",
+          },
+        },
+        required: ["identificador"],
+      },
+    },
+  },
   {
     type: "function",
     function: {
       name: "crear_ticket_soporte",
       description:
-        "Abre y registra de forma autónoma un nuevo ticket de soporte técnico en la base de datos PostgreSQL de Nora ISP cuando se detecta una falla técnica no resoluble remotamente (corte de fibra, atenuación < -27 dBm, rotura de acometida o avería de splitter NAP).",
+        "Abre y registra de forma autónoma un nuevo ticket o reclamo de soporte técnico en la base de datos PostgreSQL de Carale Internet cuando se detecta una falla técnica no resoluble remotamente (corte de fibra, atenuación < -27 dBm, rotura de acometida o avería de splitter/ONU).",
       parameters: {
         type: "object",
         properties: {
@@ -78,7 +97,7 @@ const NORA_TOOLS: Groq.Chat.ChatCompletionTool[] = [
           },
           asunto: {
             type: "string",
-            description: "Diagnóstico técnico preciso del incidente para el técnico de guardia",
+            description: "Diagnóstico técnico preciso del incidente para el técnico de guardia o resumen del reclamo",
           },
           prioridad: {
             type: "string",
@@ -91,6 +110,79 @@ const NORA_TOOLS: Groq.Chat.ChatCompletionTool[] = [
     },
   },
 ];
+
+/**
+ * Función ejecutora del Tool: Busca cliente en Neon Postgres por DNI, teléfono o ID
+ */
+async function ejecutarBuscarCliente(args: { identificador: string }) {
+  const rawId = (args.identificador || "").trim();
+  if (!rawId) {
+    return {
+      encontrado: false,
+      mensaje: "No se proporcionó ningún número de DNI o teléfono.",
+    };
+  }
+
+  const cleanDigits = rawId.replace(/[^0-9]/g, "");
+
+  const rows = await sql`
+    SELECT 
+      id, 
+      nombre, 
+      plan, 
+      ip_pppoe, 
+      estado_pppoe, 
+      estado_facturacion, 
+      olt_conectada, 
+      caja_nap, 
+      potencia_dbm, 
+      telefono, 
+      dni, 
+      domicilio
+    FROM clientes
+    WHERE 
+      id ILIKE ${'%' + rawId + '%'}
+      OR (LENGTH(${cleanDigits}) >= 4 AND regexp_replace(COALESCE(dni, ''), '[^0-9]', '', 'g') = ${cleanDigits})
+      OR (LENGTH(${cleanDigits}) >= 6 AND regexp_replace(COALESCE(telefono, ''), '[^0-9]', '', 'g') LIKE ${'%' + cleanDigits + '%'})
+      OR dni ILIKE ${'%' + rawId + '%'}
+      OR telefono ILIKE ${'%' + rawId + '%'}
+      OR nombre ILIKE ${'%' + rawId + '%'}
+    LIMIT 1;
+  `;
+
+  if (rows.length === 0) {
+    return {
+      encontrado: false,
+      mensaje: `No se encontró ningún abonado con el identificador "${rawId}" en la Base de Datos Central. Por favor, solicita verificar el número de DNI o teléfono.`,
+    };
+  }
+
+  const c = rows[0];
+  const pot = Number(c.potencia_dbm ?? 0);
+  const diagnosticoOptico =
+    pot < -27
+      ? "CRÍTICO - Pérdida de potencia / desconexión óptica inminente"
+      : pot < -24
+      ? "ADVERTENCIA - Atenuación elevada"
+      : "ÓPTIMO - Señal dentro de norma GPON";
+
+  return {
+    encontrado: true,
+    mensaje: `Cliente localizado: ${c.nombre} (ID: ${c.id}, Plan: ${c.plan}, Conexión: ${c.estado_pppoe}, Potencia: ${c.potencia_dbm} dBm - ${diagnosticoOptico}, Facturación: ${c.estado_facturacion}).`,
+    datos: {
+      id: c.id,
+      nombre: c.nombre,
+      plan: c.plan,
+      ip_pppoe: c.ip_pppoe,
+      estado_pppoe: c.estado_pppoe,
+      estado_facturacion: c.estado_facturacion,
+      potencia_dbm: c.potencia_dbm,
+      caja_nap: c.caja_nap,
+      olt_conectada: c.olt_conectada,
+      diagnostico_optico: diagnosticoOptico,
+    },
+  };
+}
 
 /**
  * Función ejecutora del Tool: Inserta el ticket en Neon Postgres
@@ -149,6 +241,24 @@ async function buildRealtimeContextAndPayload(
             clienteData = rows[0] as ClienteRow;
             break;
           }
+        }
+      }
+
+      // Detección por DNI o Teléfono en el mensaje
+      if (!clienteData) {
+        const digitsMatch = userMessage.match(/\b\d{7,13}\b/);
+        if (digitsMatch) {
+          const num = digitsMatch[0];
+          const rows = await sql`
+            SELECT * FROM clientes 
+            WHERE 
+              regexp_replace(COALESCE(dni, ''), '[^0-9]', '', 'g') = ${num}
+              OR regexp_replace(COALESCE(telefono, ''), '[^0-9]', '', 'g') LIKE ${'%' + num + '%'}
+              OR dni ILIKE ${'%' + num + '%'}
+              OR telefono ILIKE ${'%' + num + '%'}
+            LIMIT 1;
+          `;
+          if (rows.length > 0) clienteData = rows[0] as ClienteRow;
         }
       }
     }
@@ -308,6 +418,7 @@ export async function POST(req: NextRequest) {
     const {
       messages = [],
       clienteId,
+      source = "noc",
       model = "qwen/qwen3.8-27b",
       temperature = 0.4,
     } = body;
@@ -329,9 +440,13 @@ export async function POST(req: NextRequest) {
 
     let activePayload: TechnicalPayload | null = initialPayload;
 
+    // Enrutamiento inteligente de System Prompt: portal público vs consola técnica NOC
+    const selectedSystemPrompt =
+      source === "portal" ? CARALITA_PUBLIC_PROMPT : NORA_SYSTEM_PROMPT;
+
     // Ensamblado de mensajes con System Prompt y memoria viva
     const conversationMessages: ChatMessage[] = [
-      { role: "system", content: NORA_SYSTEM_PROMPT },
+      { role: "system", content: selectedSystemPrompt },
       ...(contextMessage ? [contextMessage] : []),
       ...messages.filter((m: ChatMessage) => m.role !== "system"),
     ];
@@ -353,12 +468,60 @@ export async function POST(req: NextRequest) {
     let finalContent = initialMessage?.content || "";
     let ticketsCreados: Array<Record<string, unknown>> = [];
 
-    // Si Nora ejecutó herramienta para crear ticket
+    // Si Caralita ejecutó herramientas (buscar cliente o crear ticket)
     if (toolCalls && toolCalls.length > 0) {
       conversationMessages.push(initialMessage as ChatMessage);
 
       for (const toolCall of toolCalls) {
-        if (toolCall.function.name === "crear_ticket_soporte") {
+        if (toolCall.function.name === "buscar_cliente") {
+          let toolArgs = { identificador: "" };
+          try {
+            toolArgs = JSON.parse(toolCall.function.arguments);
+          } catch (e) {
+            console.error("Error parseando argumentos de buscar_cliente:", e);
+          }
+
+          const resultado = await ejecutarBuscarCliente(toolArgs);
+
+          if (resultado.encontrado && resultado.datos) {
+            const c = resultado.datos;
+            const pot = Number(c.potencia_dbm ?? 0);
+            activePayload = {
+              tipo: "cliente",
+              titulo: `${c.nombre} (${c.id})`,
+              subtitulo: `Plan ${c.plan} • ${c.caja_nap || "Red FTTH"}`,
+              datos: [
+                {
+                  label: "Potencia Óptica",
+                  valor: `${c.potencia_dbm} dBm`,
+                  critico: pot < -27,
+                  alerta: pot < -24 && pot >= -27,
+                },
+                {
+                  label: "Sesión PPPoE",
+                  valor: c.estado_pppoe,
+                  critico: c.estado_pppoe === "Desconectado",
+                },
+                {
+                  label: "Facturación",
+                  valor: c.estado_facturacion,
+                  alerta: c.estado_facturacion === "Moroso",
+                },
+                {
+                  label: "IP PPPoE",
+                  valor: c.ip_pppoe || "Sin asignar",
+                },
+              ],
+            };
+          }
+
+          conversationMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: JSON.stringify(resultado),
+          });
+        } else if (toolCall.function.name === "crear_ticket_soporte") {
           let toolArgs = { cliente: "Desconocido", asunto: "Incidencia técnica", prioridad: "Alta" as const };
           try {
             toolArgs = JSON.parse(toolCall.function.arguments);
