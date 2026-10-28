@@ -1,27 +1,35 @@
 "use client";
 
-import React, { useState, useRef, useEffect, Suspense } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import {
+  Wifi,
+  Building2,
+  Network,
+  ShieldCheck,
+  Zap,
+  PhoneCall,
   Send,
   Paperclip,
   Bot,
   User,
-  AlertCircle,
-  CheckCircle2,
-  Wifi,
-  FileCheck,
-  LifeBuoy,
   X,
-  Image as ImageIcon,
-  ShieldCheck,
-  PhoneCall,
+  MessageSquare,
   Sparkles,
+  CheckCircle2,
+  ArrowRight,
+  ChevronRight,
+  Globe,
+  Clock,
+  Layers,
+  ChevronDown,
 } from "lucide-react";
 
-interface Message {
+interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   attachmentName?: string | null;
+  photoUrl?: string | null;
   technicalPayload?: {
     tipo: "cliente" | "nodo" | "ticket";
     titulo: string;
@@ -30,77 +38,95 @@ interface Message {
   } | null;
 }
 
-export default function PublicPortalPage() {
-  const [messages, setMessages] = useState<Message[]>([
+export default function CaraleCorporativaUI() {
+  // Estado del Widget Flotante de Caralita
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [inputMessage, setInputMessage] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
       content:
-        "¡Hola! 👋 Te damos la bienvenida a Carale Internet. Soy Caralita, tu asistente virtual oficial.\n\nPara poder ayudarte a verificar el estado de tu conexión de fibra óptica, gestionar reclamos o registrar tus comprobantes de pago, ¿me podrías indicar tu número de DNI (o CUIT) o tu número de teléfono registrado?",
+        "¡Hola! 👋 Te damos la bienvenida a Carale Internet. Soy Caralita, tu asesora de ventas y asistente técnica oficial.\n\n¿Deseas cotizar cobertura para tu hogar, consultar por enlaces dedicados B2B con SLA 99.8% o gestionar soporte técnico con tu DNI?",
     },
   ]);
-  const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll automático en el chat
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedFile(file);
+    if (isChatOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  };
+  }, [messages, isSending, isChatOpen]);
 
-  const handleRemoveFile = () => {
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+  // Previsualización de archivo/comprobante
+  useEffect(() => {
+    if (!selectedFile) {
+      setPhotoPreview(null);
+      return;
     }
-  };
+    const objectUrl = URL.createObjectURL(selectedFile);
+    setPhotoPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [selectedFile]);
 
   const handleQuickPrompt = (promptText: string) => {
-    setInput(promptText);
+    setIsChatOpen(true);
+    setInputMessage(promptText);
   };
 
+  /**
+   * Misión 2: Cableado del Widget IA (Ventas & Soporte)
+   * Envía la petición real a /api/chat con source: 'portal' y la imagen en Base64 si existe.
+   */
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const trimmedInput = input.trim();
-    if ((!trimmedInput && !selectedFile) || isLoading) return;
 
-    setErrorMsg(null);
+    const trimmedText = inputMessage.trim();
+    if ((!trimmedText && !selectedFile) || isSending) return;
 
-    let messageContent = trimmedInput;
-    const attachmentName = selectedFile ? selectedFile.name : null;
+    setChatError(null);
+    setIsSending(true);
 
-    if (selectedFile) {
-      const fileNotice = `[Comprobante/Archivo adjunto: ${selectedFile.name}]`;
-      messageContent = messageContent ? `${messageContent}\n${fileNotice}` : fileNotice;
-    }
-
-    const updatedMessages: Message[] = [
-      ...messages,
-      {
-        role: "user",
-        content: messageContent,
-        attachmentName,
-      },
-    ];
-
-    setMessages(updatedMessages);
-    setInput("");
-    setSelectedFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-    setIsLoading(true);
+    let base64Image: string | null = null;
 
     try {
-      // Cableado API real con source: 'portal' para activar el System Prompt empático
+      // 1. Si hay archivo o imagen, convertir a Base64 con FileReader
+      if (selectedFile) {
+        base64Image = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = (err) => reject(err);
+          reader.readAsDataURL(selectedFile);
+        });
+      }
+
+      // 2. Construir mensaje de usuario
+      const promptText =
+        trimmedText ||
+        (base64Image
+          ? "Adjunto comprobante de pago / fotografía para procesamiento contable o técnico."
+          : "");
+
+      const userMsg: ChatMessage = {
+        role: "user",
+        content: promptText,
+        attachmentName: selectedFile ? selectedFile.name : null,
+        photoUrl: photoPreview,
+      };
+
+      const updatedMessages = [...messages, userMsg];
+      setMessages(updatedMessages);
+      setInputMessage("");
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+
+      // 3. Petición real al backend inteligente
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -110,15 +136,17 @@ export default function PublicPortalPage() {
             content: m.content,
           })),
           source: "portal",
+          image: base64Image,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "Error al comunicarse con Caralita.");
+        throw new Error(data?.error || "Error al comunicarse con Caralita IA.");
       }
 
+      // 4. Mostrar respuesta comercial o técnica
       if (data.content) {
         setMessages((prev) => [
           ...prev,
@@ -129,291 +157,624 @@ export default function PublicPortalPage() {
           },
         ]);
       } else {
-        throw new Error("No se recibió respuesta del asistente.");
+        throw new Error("Respuesta vacía del servidor.");
       }
-    } catch (err: unknown) {
+    } catch (err) {
       console.error("[PORTAL_CHAT_ERROR]:", err);
-      const msg = err instanceof Error ? err.message : "Error inesperado de comunicación.";
-      setErrorMsg(msg);
+      const msg = err instanceof Error ? err.message : "Error de conexión temporal.";
+      setChatError(msg);
     } finally {
-      setIsLoading(false);
+      setIsSending(false);
     }
   };
 
   return (
-    <div className="flex h-screen w-full flex-col bg-slate-950 font-sans text-slate-100">
-      {/* Barra Superior del Portal Público */}
-      <header className="border-b border-slate-800/90 bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-lg shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500 via-teal-500 to-blue-600 font-bold text-white shadow-md shadow-cyan-500/25">
-            <Bot className="h-5 w-5" />
-            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-slate-900" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                Carale Internet
-              </h1>
-              <span className="text-[10px] font-bold text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded-full border border-cyan-800/50">
-                Portal de Clientes
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-cyan-500 selection:text-white relative overflow-x-hidden">
+      {/* Fondo con Glow y Micro-Efectos Tecnológicos */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-cyan-600/10 blur-[140px]" />
+        <div className="absolute top-1/3 -right-40 h-[500px] w-[500px] rounded-full bg-blue-600/10 blur-[140px]" />
+        <div className="absolute -bottom-40 left-1/3 h-[500px] w-[500px] rounded-full bg-emerald-600/10 blur-[140px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b0a_1px,transparent_1px),linear-gradient(to_bottom,#1e293b0a_1px,transparent_1px)] bg-[size:4rem_4rem]" />
+      </div>
+
+      {/* 1. Navbar Institucional Premium */}
+      <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+          {/* Logo y Marca */}
+          <Link href="/portal" className="flex items-center gap-3 group">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500 via-teal-500 to-blue-600 font-black text-white text-xl shadow-lg shadow-cyan-500/30 group-hover:scale-105 transition-transform duration-200">
+              C
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold tracking-tight text-white text-lg">CARALE</span>
+                <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/90 px-2 py-0.5 rounded-full border border-cyan-800/60 uppercase tracking-wider">
+                  Fibra Pura
+                </span>
+              </div>
+              <span className="block text-[11px] font-medium text-slate-400">
+                Telecomunicaciones & Datos
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 flex items-center gap-1">
-              <span>Caralita • Asistente Virtual Oficial</span>
-              <span className="text-emerald-400 font-medium">• En línea</span>
-            </p>
-          </div>
-        </div>
+          </Link>
 
-        <div className="hidden sm:flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-slate-400 bg-slate-800/60 px-3 py-1.5 rounded-xl border border-slate-700/60">
-            <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" />
-            <span>Atención Segura y Directa</span>
+          {/* Navegación Desktop */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
+            <a href="#residencial" className="hover:text-cyan-400 transition">
+              Residencial
+            </a>
+            <a href="#empresas" className="hover:text-cyan-400 transition flex items-center gap-1.5">
+              <span>Empresas B2B</span>
+              <span className="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800/50">
+                SLA 99.8%
+              </span>
+            </a>
+            <a href="#mayorista" className="hover:text-cyan-400 transition">
+              Mayorista & Tránsito
+            </a>
+            <a href="#infraestructura" className="hover:text-cyan-400 transition">
+              Red & Cobertura
+            </a>
+          </nav>
+
+          {/* Botones de Acción */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setIsChatOpen(true);
+                setInputMessage("Hola, quiero consultar el estado de mi servicio con mi DNI o regularizar un pago.");
+              }}
+              className="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-xs font-semibold text-slate-200 shadow-sm transition"
+            >
+              <User className="h-3.5 w-3.5 text-cyan-400" />
+              <span>Mi Cuenta / Autogestión</span>
+            </button>
+            <button
+              onClick={() => {
+                setIsChatOpen(true);
+                setInputMessage("Hola Caralita, quiero consultar cobertura y contratar fibra óptica en mi barrio.");
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-bold text-xs text-white shadow-lg shadow-cyan-500/25 transition hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              <span>Contratar Ahora</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Área Central de Conversación */}
-      <main className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-        <div className="mx-auto max-w-3xl space-y-4">
-          {/* Banner de bienvenida interactivo */}
-          <div className="rounded-2xl border border-slate-800/80 bg-gradient-to-r from-slate-900/90 to-cyan-950/20 p-4 shadow-sm text-xs">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mt-0.5">
-                <Sparkles className="h-4 w-4" />
-              </div>
-              <div className="space-y-1.5 flex-1">
-                <p className="font-semibold text-slate-200">
-                  ¿Cómo puedo ayudarte en este momento?
-                </p>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <button
-                    onClick={() => handleQuickPrompt("Hola Caralita, quiero consultar el estado de mi conexión de internet.")}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-[11px] text-cyan-300 transition"
-                  >
-                    🔍 Consultar mi servicio
-                  </button>
-                  <button
-                    onClick={() => handleQuickPrompt("Tengo problemas de lentitud o corte en mi fibra óptica.")}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-[11px] text-cyan-300 transition"
-                  >
-                    ⚠️ Reportar problema técnico
-                  </button>
-                  <button
-                    onClick={() => handleQuickPrompt("Quiero informar o enviar mi comprobante de pago.")}
-                    className="px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-[11px] text-cyan-300 transition"
-                  >
-                    📄 Enviar comprobante de pago
-                  </button>
+      {/* 2. Hero Section de Clase Mundial */}
+      <section className="relative z-10 pt-16 pb-24 md:pt-24 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="text-center max-w-4xl mx-auto space-y-6">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-xs font-semibold text-cyan-300 shadow-inner">
+            <span className="flex h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span>Infraestructura FTTH de Última Generación en Argentina</span>
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-tight">
+            La red de fibra óptica{" "}
+            <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-500 bg-clip-text text-transparent">
+              más avanzada
+            </span>{" "}
+            para tu hogar y empresa.
+          </h1>
+
+          <p className="text-base sm:text-lg md:text-xl text-slate-300 font-normal leading-relaxed max-w-2xl mx-auto">
+            Conectividad simétrica de ultrabaja latencia, enlaces dedicados B2B con SLA 99.8% y
+            transporte mayorista directo a los principales puntos de intercambio de tráfico.
+          </p>
+
+          {/* Botones CTA Principales */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <button
+              onClick={() => {
+                setIsChatOpen(true);
+                setInputMessage("Hola Caralita, quiero cotizar un plan de fibra óptica para mi domicilio.");
+              }}
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-sm shadow-xl shadow-cyan-500/30 transition hover:scale-[1.02] active:scale-[0.98] flex items-center gap-2"
+            >
+              <span>Ver Planes Residenciales</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => {
+                setIsChatOpen(true);
+                setInputMessage("Hola, solicito información y cotización para un Enlace Dedicado Corporativo con SLA del 99.8%.");
+              }}
+              className="px-6 py-3.5 rounded-2xl border border-slate-800 hover:border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-200 font-bold text-sm shadow-sm transition hover:scale-[1.02] flex items-center gap-2"
+            >
+              <Building2 className="h-4 w-4 text-cyan-400" />
+              <span>Contactar Ventas B2B</span>
+            </button>
+          </div>
+
+          {/* Badges de Confianza / Métricas de Red */}
+          <div className="pt-12 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+            <div className="p-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
+              <span className="block text-2xl font-black text-cyan-400">99.8%</span>
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                SLA Garantizado
+              </span>
+            </div>
+            <div className="p-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
+              <span className="block text-2xl font-black text-emerald-400">100%</span>
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                Fibra Pura GPON
+              </span>
+            </div>
+            <div className="p-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
+              <span className="block text-2xl font-black text-blue-400">&lt; 4 ms</span>
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                Latencia Directa IXP
+              </span>
+            </div>
+            <div className="p-3.5 rounded-2xl border border-slate-800/80 bg-slate-900/60 backdrop-blur-md">
+              <span className="block text-2xl font-black text-indigo-400">24/7/365</span>
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                Monitoreo NOC IA
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. Grilla de Servicios: Los 3 Pilares Corporativos */}
+      <section id="residencial" className="relative z-10 py-20 bg-slate-900/40 border-y border-slate-800/60">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+            <span className="text-xs font-bold text-cyan-400 uppercase tracking-widest bg-cyan-950/80 px-3 py-1 rounded-full border border-cyan-800/60">
+              Soluciones Integrales de Conectividad
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
+              Ingeniería óptica para cada necesidad de tráfico
+            </h2>
+            <p className="text-sm sm:text-base text-slate-400">
+              Desde hogares de alto rendimiento hasta interconexiones de centros de datos y carriers.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Tarjeta 1: FTTH Residencial */}
+            <div className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 group">
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 group-hover:scale-110 transition-transform">
+                  <Wifi className="h-6 w-6" />
                 </div>
+                <h3 className="text-xl font-bold text-white">Internet Fibra Residencial</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Velocidades simétricas para gaming competitivo, streaming 4K y teletrabajo sin
+                  microcortes por atenuación.
+                </p>
+                <ul className="space-y-2.5 pt-4 text-xs text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <span>Planes de 100, 300, 600 Mbps y 1 Gbps</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <span>Módem ONU Dual Band WiFi 6 Gigabit</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                    <span>Autogestión y soporte instantáneo vía Caralita</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-8">
+                <button
+                  onClick={() => {
+                    setIsChatOpen(true);
+                    setInputMessage("Quiero consultar cobertura residencial y planes disponibles para mi casa.");
+                  }}
+                  className="w-full py-3 rounded-xl bg-slate-800 hover:bg-cyan-500 hover:text-white text-xs font-bold text-slate-200 transition shadow-sm"
+                >
+                  Consultar Cobertura Barrial
+                </button>
+              </div>
+            </div>
+
+            {/* Tarjeta 2: Enlaces Dedicados B2B (Destacada) */}
+            <div id="empresas" className="relative rounded-3xl border-2 border-cyan-500/60 bg-gradient-to-b from-slate-900 to-slate-950 p-8 flex flex-col justify-between shadow-2xl shadow-cyan-500/20 group">
+              <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow-md tracking-wider">
+                Misión Crítica
+              </div>
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-cyan-500/40 group-hover:scale-110 transition-transform">
+                  <Building2 className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Enlaces Dedicados B2B</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Canales 1:1 no compartidos para corporaciones, industrias y entidades financieras
+                  con disponibilidad auditada.
+                </p>
+                <ul className="space-y-2.5 pt-4 text-xs text-slate-200">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-cyan-400 shrink-0" />
+                    <span>SLA Garantizado del 99.8% por contrato</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-cyan-400 shrink-0" />
+                    <span>Pool de IPs Públicas Fijas y BGP Multi-homing</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-cyan-400 shrink-0" />
+                    <span>Ejecutivo de cuentas técnico y guardia NOC prioritaria</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-8">
+                <button
+                  onClick={() => {
+                    setIsChatOpen(true);
+                    setInputMessage("Hola Caralita, solicito una cotización de Enlace Dedicado 1:1 con SLA 99.8% para mi empresa.");
+                  }}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-bold text-white shadow-lg shadow-cyan-500/25 transition"
+                >
+                  Solicitar Propuesta Corporativa
+                </button>
+              </div>
+            </div>
+
+            {/* Tarjeta 3: Transporte Mayorista */}
+            <div id="mayorista" className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 flex flex-col justify-between hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 group">
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-blue-500/20 to-indigo-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30 group-hover:scale-110 transition-transform">
+                  <Network className="h-6 w-6" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Transporte & Mayorista</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Interconexión de fibra oscura, lambdas protegidas y capacidad de tránsito IP
+                  para operadores de red y cooperativas.
+                </p>
+                <ul className="space-y-2.5 pt-4 text-xs text-slate-300">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
+                    <span>Puertos 10G y 100G en anillo metropolitano</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
+                    <span>Interconexión directa en CABASE / IXP Buenos Aires</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
+                    <span>Rutas redundantes de fibra y bypass DWDM</span>
+                  </li>
+                </ul>
+              </div>
+              <div className="pt-8">
+                <button
+                  onClick={() => {
+                    setIsChatOpen(true);
+                    setInputMessage("Quiero consultar por capacidad mayorista y transporte de datos punto a punto.");
+                  }}
+                  className="w-full py-3 rounded-xl bg-slate-800 hover:bg-blue-600 hover:text-white text-xs font-bold text-slate-200 transition shadow-sm"
+                >
+                  Contactar Ingeniería Carrier
+                </button>
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Listado de Mensajes */}
-          {messages.map((msg, index) => {
-            const isUser = msg.role === "user";
-            return (
-              <div
-                key={index}
-                className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+      {/* 4. Banner Institucional de Soporte & Autogestión con Caralita */}
+      <section id="infraestructura" className="relative z-10 py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="rounded-3xl border border-slate-800 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-slate-950 p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 backdrop-blur-xl">
+          <div className="space-y-4 max-w-2xl">
+            <div className="inline-flex items-center gap-2 text-xs font-bold text-cyan-400 bg-cyan-950/80 px-3 py-1 rounded-full border border-cyan-800/60">
+              <Bot className="h-3.5 w-3.5" />
+              <span>Cerebro Autónomo de Carale Internet</span>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-white">
+              ¿Ya eres cliente de Carale? Autogestiónate en segundos.
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Caralita audita en vivo la potencia óptica de tu módem en la Base de Datos Central,
+              recibe comprobantes de pago para habilitación inmediata y genera reclamos técnicos con
+              seguimiento de cuadrilla en tiempo real.
+            </p>
+          </div>
+
+          <div className="shrink-0 flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => {
+                setIsChatOpen(true);
+                setInputMessage("Quiero consultar el estado de mi conexión de fibra con mi DNI.");
+              }}
+              className="px-6 py-3.5 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs shadow-lg shadow-cyan-500/25 transition"
+            >
+              Consultar con mi DNI
+            </button>
+            <button
+              onClick={() => {
+                setIsChatOpen(true);
+                setInputMessage("Quiero adjuntar mi comprobante de pago para registrar la factura.");
+              }}
+              className="px-6 py-3.5 rounded-2xl border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-200 font-bold text-xs transition flex items-center justify-center gap-2"
+            >
+              <Paperclip className="h-4 w-4 text-cyan-400" />
+              <span>Subir Comprobante</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. Footer Corporativo con Firma Oficial */}
+      <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 text-xs text-slate-400">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+          <div className="space-y-1">
+            <div className="flex items-center justify-center md:justify-start gap-2">
+              <span className="font-extrabold text-white text-sm">CARALE</span>
+              <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950 px-1.5 py-0.2 rounded border border-cyan-800/50">
+                by Nora
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Red FTTH de Telecomunicaciones & ISP Cloud Core.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <p className="font-semibold text-slate-300">
+              Desarrollado por: <span className="text-white font-bold">Nexora One</span>
+            </p>
+            <p className="text-[11px] text-slate-500">
+              Soporte Central:{" "}
+              <a href="tel:3786414533" className="text-cyan-400 hover:underline font-mono">
+                3786414533
+              </a>{" "}
+              • Email:{" "}
+              <a
+                href="mailto:nexoraone@nexativanews.com.ar"
+                className="text-cyan-400 hover:underline font-mono"
               >
-                <div
-                  className={`flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-xl text-xs font-bold ${
-                    isUser
-                      ? "bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-900/40"
-                      : "bg-slate-800 border border-cyan-500/30 text-cyan-400"
-                  }`}
-                >
-                  {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
-                </div>
+                nexoraone@nexativanews.com.ar
+              </a>
+            </p>
+          </div>
+        </div>
+      </footer>
 
-                <div className="max-w-[85%] sm:max-w-[78%] space-y-2.5">
-                  <div
-                    className={`rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                      isUser
-                        ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-none"
-                        : "bg-slate-900 border border-slate-800/90 text-slate-200 rounded-tl-none whitespace-pre-wrap"
-                    }`}
-                  >
-                    {/* Adjunto si fue enviado por el usuario */}
-                    {isUser && msg.attachmentName && (
-                      <div className="mb-2 flex items-center gap-2 rounded-xl bg-black/20 p-2 border border-white/10 text-xs">
-                        <ImageIcon className="h-4 w-4 text-cyan-200 shrink-0" />
-                        <span className="truncate font-medium">{msg.attachmentName}</span>
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-300 ml-auto shrink-0" />
-                      </div>
-                    )}
-
-                    <div>{msg.content}</div>
-
-                    {!isUser && (
-                      <div className="mt-2 pt-1 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500">
-                        <span>Carale Internet • Soporte Oficial</span>
-                        <span>Caralita</span>
-                      </div>
-                    )}
+      {/* 6. El Rol Estrella: Widget Flotante Premium de Caralita (Abajo a la Derecha) */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {!isChatOpen ? (
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="group relative flex items-center gap-3 px-5 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 via-teal-500 to-blue-600 text-white font-bold text-xs shadow-2xl shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all duration-300 hover:scale-105 active:scale-95 border border-cyan-300/30"
+          >
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
+            </span>
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-white" />
+              <div className="text-left">
+                <span className="block leading-none">Hablá con Caralita</span>
+                <span className="text-[9px] text-cyan-100 font-normal">Ventas & Soporte IA</span>
+              </div>
+            </div>
+          </button>
+        ) : (
+          /* Popover / Modal Flotante del Chat */
+          <div className="w-[92vw] sm:w-[420px] h-[580px] rounded-3xl border border-slate-700/80 bg-slate-900/95 shadow-2xl backdrop-blur-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header del Chat */}
+            <div className="h-16 px-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30 font-bold">
+                    <Bot className="h-5 w-5" />
                   </div>
-
-                  {/* Tarjeta de Reclamo o Telemetría si la IA devolvió technicalPayload */}
-                  {!isUser && msg.technicalPayload && (
-                    <div className="rounded-2xl border border-slate-700/80 bg-slate-900/90 p-4 shadow-xl backdrop-blur">
-                      <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-                        <div className="flex items-center gap-2">
-                          {msg.technicalPayload.tipo === "ticket" ? (
-                            <LifeBuoy className="h-4 w-4 text-amber-400" />
-                          ) : (
-                            <Wifi className="h-4 w-4 text-cyan-400" />
-                          )}
-                          <h4 className="text-xs font-bold text-white">
-                            {msg.technicalPayload.titulo}
-                          </h4>
-                        </div>
-                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                          {msg.technicalPayload.tipo === "ticket" ? "Reclamo Registrado" : "Estado Conexión"}
-                        </span>
-                      </div>
-
-                      {msg.technicalPayload.subtitulo && (
-                        <p className="text-[11px] text-slate-400 mb-2.5 font-medium">
-                          {msg.technicalPayload.subtitulo}
-                        </p>
-                      )}
-
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        {msg.technicalPayload.datos.map((item, i) => (
-                          <div
-                            key={i}
-                            className={`p-2 rounded-xl border ${
-                              item.critico
-                                ? "bg-rose-950/30 border-rose-500/40 text-rose-300"
-                                : item.alerta
-                                ? "bg-amber-950/30 border-amber-500/40 text-amber-300"
-                                : "bg-slate-800/50 border-slate-700/60 text-slate-200"
-                            }`}
-                          >
-                            <span className="block text-[10px] text-slate-400">
-                              {item.label}
-                            </span>
-                            <span className="font-semibold text-[11px] truncate block mt-0.5 text-slate-100">
-                              {item.valor}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
                 </div>
-              </div>
-            );
-          })}
-
-          {/* Loader de razonamiento */}
-          {isLoading && (
-            <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-800 border border-cyan-500/30 text-cyan-400">
-                <Bot className="h-4 w-4" />
-              </div>
-              <div className="rounded-2xl rounded-tl-none border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-400">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:200ms]" />
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:400ms]" />
-                  <span className="ml-2 text-xs text-slate-300">
-                    Caralita está verificando tu información en el sistema...
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm">Caralita IA</span>
+                    <span className="text-[9px] font-bold text-cyan-400 bg-cyan-950 px-1.5 py-0.2 rounded border border-cyan-800/60 uppercase">
+                      Oficial
+                    </span>
+                  </div>
+                  <span className="block text-[10px] text-slate-400">
+                    Ventas B2B, Residencial & Reclamos
                   </span>
                 </div>
               </div>
-            </div>
-          )}
-
-          {errorMsg && (
-            <div className="rounded-xl border border-rose-900/50 bg-rose-950/30 p-3.5 text-xs text-rose-300 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
-
-      {/* Input de Mensajes y Botón para Adjuntar Comprobantes */}
-      <footer className="border-t border-slate-800 bg-slate-900/90 p-4 backdrop-blur-md shrink-0">
-        <div className="mx-auto max-w-3xl space-y-2">
-          {/* Previsualización del archivo adjunto */}
-          {selectedFile && (
-            <div className="flex items-center justify-between rounded-xl border border-cyan-500/30 bg-cyan-950/30 px-3.5 py-2 text-xs text-cyan-200">
-              <div className="flex items-center gap-2 truncate">
-                <FileCheck className="h-4 w-4 text-cyan-400 shrink-0" />
-                <span className="truncate font-medium">{selectedFile.name}</span>
-                <span className="text-[10px] text-cyan-400/80 font-mono">
-                  ({(selectedFile.size / 1024).toFixed(1)} KB)
-                </span>
-              </div>
               <button
-                type="button"
-                onClick={handleRemoveFile}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-                title="Quitar archivo"
+                onClick={() => setIsChatOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                title="Minimizar chat"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-5 w-5" />
               </button>
             </div>
-          )}
 
-          {/* Formulario de envío */}
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-            {/* Input oculto para subir comprobante / imagen */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              accept="image/*,application/pdf"
-              className="hidden"
-              id="file-upload"
-            />
+            {/* Chips Rápidos de Conversación */}
+            <div className="px-3 py-2 bg-slate-950/40 border-b border-slate-800/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+              <button
+                onClick={() => handleQuickPrompt("Quiero saber cobertura y planes en mi barrio")}
+                className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-[10px] font-medium text-slate-300 border border-slate-700/60 transition"
+              >
+                📍 Cobertura Barrial
+              </button>
+              <button
+                onClick={() => handleQuickPrompt("Cotizar Enlace Dedicado Corporativo con SLA 99.8%")}
+                className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-[10px] font-medium text-slate-300 border border-slate-700/60 transition"
+              >
+                🏢 Enlace B2B SLA 99.8%
+              </button>
+              <button
+                onClick={() => handleQuickPrompt("Consultar estado técnico de mi conexión con mi DNI")}
+                className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-[10px] font-medium text-slate-300 border border-slate-700/60 transition"
+              >
+                🩺 Reclamo con DNI
+              </button>
+            </div>
 
-            {/* Botón para adjuntar comprobante */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading}
-              title="Adjuntar comprobante de pago o imagen"
-              className={`p-3 rounded-xl border transition flex items-center justify-center shrink-0 ${
-                selectedFile
-                  ? "border-cyan-500 bg-cyan-500/20 text-cyan-300 shadow-sm shadow-cyan-500/20"
-                  : "border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Paperclip className="h-4 w-4" />
-            </button>
+            {/* Historial de Mensajes */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs">
+              {messages.map((msg, index) => {
+                const isUser = msg.role === "user";
+                return (
+                  <div
+                    key={index}
+                    className={`flex gap-2.5 max-w-[88%] ${
+                      isUser ? "ml-auto flex-row-reverse" : "mr-auto"
+                    }`}
+                  >
+                    <div
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                        isUser
+                          ? "bg-gradient-to-tr from-cyan-600 to-blue-600 text-white"
+                          : "bg-slate-800 text-cyan-400 border border-slate-700"
+                      }`}
+                    >
+                      {isUser ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
+                    </div>
 
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={isLoading}
-              placeholder="Escribe tu mensaje, DNI o consulta aquí..."
-              className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 transition"
-            />
+                    <div className="space-y-1.5">
+                      <div
+                        className={`rounded-2xl p-3 leading-relaxed shadow-sm ${
+                          isUser
+                            ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-none"
+                            : "bg-slate-800/90 border border-slate-700/70 text-slate-200 rounded-tl-none"
+                        }`}
+                      >
+                        {msg.photoUrl && (
+                          <div className="mb-2 rounded-xl overflow-hidden border border-white/20 max-w-[200px]">
+                            <img
+                              src={msg.photoUrl}
+                              alt="Comprobante"
+                              className="w-full h-auto max-h-40 object-cover"
+                            />
+                          </div>
+                        )}
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                      </div>
 
-            <button
-              type="submit"
-              disabled={isLoading || (!input.trim() && !selectedFile)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-cyan-500/20 transition disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-            >
-              <Send className="h-4 w-4" />
-              <span className="hidden sm:inline">Enviar</span>
-            </button>
-          </form>
+                      {/* Tarjeta Técnica de Reclamo/Ticket si Caralita lo abre */}
+                      {msg.technicalPayload && (
+                        <div className="rounded-xl border border-cyan-500/40 bg-slate-950/80 p-2.5 space-y-1.5">
+                          <span className="font-bold text-white text-[11px] block">
+                            {msg.technicalPayload.titulo}
+                          </span>
+                          <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+                            {msg.technicalPayload.datos.map((item, i) => (
+                              <div key={i} className="bg-slate-900 p-1.5 rounded border border-slate-800">
+                                <span className="block text-slate-400 uppercase text-[8px]">
+                                  {item.label}
+                                </span>
+                                <span className="font-semibold text-cyan-300">{item.valor}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
 
-          <p className="text-center text-[10px] text-slate-500">
-            Carale Internet • Sistema de Autogestión Asistido por Caralita
-          </p>
-        </div>
-      </footer>
+              {isSending && (
+                <div className="flex gap-2.5 max-w-[85%] mr-auto items-center">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-800 text-cyan-400 border border-slate-700">
+                    <Bot className="h-3.5 w-3.5 animate-spin" />
+                  </div>
+                  <div className="rounded-2xl bg-slate-800/90 border border-slate-700/70 px-3 py-2 text-xs text-slate-400 rounded-tl-none flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    <span>Caralita procesando tu consulta...</span>
+                  </div>
+                </div>
+              )}
+
+              {chatError && (
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+                  {chatError}
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Previsualización de Comprobante / Imagen adjunta */}
+            {photoPreview && (
+              <div className="px-3 py-2 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2">
+                  <img
+                    src={photoPreview}
+                    alt="Preview"
+                    className="h-9 w-9 rounded-lg object-cover border border-cyan-500/40"
+                  />
+                  <div className="text-[11px]">
+                    <span className="text-white block font-medium truncate max-w-[200px]">
+                      {selectedFile?.name}
+                    </span>
+                    <span className="text-[9px] text-slate-400">Listo para enviar</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedFile(null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Input Footer del Widget */}
+            <footer className="p-3 bg-slate-950/95 border-t border-slate-800 shrink-0">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setSelectedFile(file);
+                  }}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`p-2 rounded-xl border transition ${
+                    selectedFile
+                      ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
+                      : "bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border-slate-700"
+                  }`}
+                  title="Adjuntar comprobante o archivo"
+                >
+                  <Paperclip className="h-4 w-4" />
+                </button>
+
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder={
+                    selectedFile
+                      ? "Describe el comprobante..."
+                      : "Escribe tu consulta o DNI..."
+                  }
+                  className="flex-1 rounded-xl border border-slate-800 bg-slate-900/90 px-3.5 py-2 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+
+                <button
+                  type="submit"
+                  disabled={(!inputMessage.trim() && !selectedFile) || isSending}
+                  className="p-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-40 text-white shadow-md shadow-cyan-500/25 transition"
+                  title="Enviar mensaje"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </form>
+            </footer>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
