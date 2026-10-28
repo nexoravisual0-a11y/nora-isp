@@ -36,7 +36,7 @@ interface Message {
   technicalPayload?: TechnicalPayload | null;
 }
 
-function CaraleChatInner() {
+function CaralitaChatInner() {
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get("prompt");
 
@@ -44,7 +44,7 @@ function CaraleChatInner() {
     {
       role: "assistant",
       content:
-        "Hola, soy Carale, el asistente inteligente de Carale Internet. Estoy conectado a la Base de Datos Central vía Core API para auditar clientes, telemetría de cajas NAP/OLT o abrir tickets técnicos de forma autónoma.",
+        "Hola, soy Caralita, la asistente inteligente y técnica de Carale Internet. Estoy conectada a la Base de Datos Central vía Core API para auditar clientes, telemetría de cajas NAP/OLT o abrir tickets técnicos de forma autónoma.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -94,7 +94,7 @@ function CaraleChatInner() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || "Error al comunicarse con Carale IA.");
+        throw new Error(data?.error || "Error al comunicarse con Caralita IA.");
       }
 
       if (data.content) {
@@ -110,7 +110,7 @@ function CaraleChatInner() {
         throw new Error("Respuesta vacía del motor de IA.");
       }
     } catch (err: unknown) {
-      console.error("[CARALE_CHAT_ERROR]:", err);
+      console.error("[CARALITA_CHAT_ERROR]:", err);
       const msg = err instanceof Error ? err.message : "Error inesperado de comunicación.";
       setErrorMsg(msg);
     } finally {
@@ -120,7 +120,7 @@ function CaraleChatInner() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col bg-slate-950 font-sans">
-      {/* Barra Superior de Control de Carale */}
+      {/* Barra Superior de Control de Caralita */}
       <div className="border-b border-slate-800 bg-slate-900/60 px-6 py-3 flex flex-wrap items-center justify-between gap-4 shrink-0">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 font-bold text-white shadow-md shadow-cyan-500/20">
@@ -128,7 +128,7 @@ function CaraleChatInner() {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-sm font-semibold text-white">Carale (Nivel 3 FTTH & ERP)</h1>
+              <h1 className="text-sm font-semibold text-white">Caralita (Nivel 3 FTTH & ERP)</h1>
               <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Core DB Conectado
               </span>
@@ -263,7 +263,7 @@ function CaraleChatInner() {
                   <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:200ms]" />
                   <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse [animation-delay:400ms]" />
                   <span className="ml-2 text-xs text-slate-300 font-medium">
-                    Carale está consultando la telemetría en la Base de Datos Central y razonando la solución...
+                    Caralita está consultando la telemetría en la Base de Datos Central y razonando la solución...
                   </span>
                 </div>
               </div>
@@ -289,7 +289,7 @@ function CaraleChatInner() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
-            placeholder="Pregúntale a Carale por un abonado, atenuación en una NAP, o solicita abrir un ticket..."
+            placeholder="Pregúntale a Caralita por un abonado, atenuación en una NAP, o solicita abrir un ticket..."
             className="flex-1 rounded-xl border border-slate-700 bg-slate-800/80 px-4 py-3 text-sm text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 disabled:opacity-50 transition"
           />
           <button
@@ -308,8 +308,8 @@ function CaraleChatInner() {
 
 export default function NoraCopilotPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-xs text-slate-400">Cargando Consola Carale...</div>}>
-      <CaraleChatInner />
+    <Suspense fallback={<div className="p-8 text-xs text-slate-400">Cargando Consola Caralita...</div>}>
+      <CaralitaChatInner />
     </Suspense>
   );
 }

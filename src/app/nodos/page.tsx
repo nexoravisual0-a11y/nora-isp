@@ -62,7 +62,7 @@ export default function NodosPage() {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold shadow-md transition"
           >
             <Bot className="h-4 w-4" />
-            <span>Diagnosticar Red con Carale</span>
+            <span>Diagnosticar Red con Caralita</span>
           </Link>
         </div>
       </div>
@@ -187,11 +187,11 @@ export default function NodosPage() {
                 <div className="mt-4 pt-3 border-t border-slate-800/60 flex justify-end">
                   <Link
                     href={`/nora?prompt=${encodeURIComponent(
-                      `Carale, necesito que analices el nodo ${nodo.nombre} (${nodo.id}) con potencia ${potencia} dBm en ${nodo.ubicacion}. Estado actual: ${nodo.estado}. Proporciona recomendaciones para el técnico de campo.`
+                      `Caralita, necesito que analices el nodo ${nodo.nombre} (${nodo.id}) con potencia ${potencia} dBm en ${nodo.ubicacion}. Estado actual: ${nodo.estado}. Proporciona recomendaciones para el técnico de campo.`
                     )}`}
                     className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition"
                   >
-                    <span>Pedir reporte a Carale Nivel 3</span>
+                    <span>Pedir reporte a Caralita Nivel 3</span>
                     <Zap className="h-3 w-3" />
                   </Link>
                 </div>

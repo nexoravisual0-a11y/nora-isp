@@ -28,7 +28,7 @@ const NAVIGATION_LINKS: SidebarLink[] = [
   { name: "Clientes CRM", href: "/clientes", icon: Users },
   { name: "Red FTTH (OLT/NAP)", href: "/nodos", icon: Network, badge: "Alerta" },
   { name: "Tickets de Soporte", href: "/tickets", icon: LifeBuoy, badge: "Activo" },
-  { name: "Consola Carale", href: "/nora", icon: Bot, badge: "AI N3" },
+  { name: "Consola Caralita", href: "/nora", icon: Bot, badge: "AI N3" },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -110,7 +110,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center justify-between text-xs font-semibold text-slate-200 mb-1">
               <div className="flex items-center gap-1.5">
                 <Cpu className="h-3.5 w-3.5 text-cyan-400" />
-                <span>Carale AI Core</span>
+                <span>Caralita AI Core</span>
               </div>
               <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />

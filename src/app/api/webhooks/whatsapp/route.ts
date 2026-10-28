@@ -317,7 +317,7 @@ export async function POST(req: NextRequest) {
           } catch (aiErr) {
             console.error("[WHATSAPP AI INFERENCE ERROR]:", aiErr);
             replyText =
-              "Hola, te habla Carale, el asistente inteligente de Carale Internet. En este momento estamos experimentando una breve intermitencia en el sistema de autogestión. Nuestro equipo de guardia técnica ha recibido tu notificación y se pondrá en contacto a la brevedad.";
+              "Hola, te habla Caralita, la asistente inteligente de Carale Internet. En este momento estamos experimentando una breve intermitencia en el sistema de autogestión. Nuestro equipo de guardia técnica ha recibido tu notificación y se pondrá en contacto a la brevedad.";
           }
 
           // 4. Misión 3: Enviar mensaje saliente a WhatsApp mediante Graph API

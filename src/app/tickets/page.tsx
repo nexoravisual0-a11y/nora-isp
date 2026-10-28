@@ -44,7 +44,7 @@ export default function TicketsPage() {
             </span>
           </div>
           <p className="text-sm text-slate-400 mt-1">
-            Cola de reclamos técnicos de nivel 1, 2 y escalamiento automático autónomo a Carale Nivel 3.
+            Cola de reclamos técnicos de nivel 1, 2 y escalamiento automático autónomo a Caralita Nivel 3.
           </p>
         </div>
 
@@ -59,11 +59,11 @@ export default function TicketsPage() {
             <span className="hidden sm:inline">Actualizar</span>
           </button>
           <Link
-            href="/nora?prompt=Carale,+revisa+la+cola+de+tickets+abiertos+y+dime+cu%C3%A1l+requiere+atenci%C3%B3n+inmediata+en+la+red+FTTH."
+            href="/nora?prompt=Caralita,+revisa+la+cola+de+tickets+abiertos+y+dime+cu%C3%A1l+requiere+atenci%C3%B3n+inmediata+en+la+red+FTTH."
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-semibold shadow-md transition"
           >
             <Bot className="h-4 w-4" />
-            <span>Analizar Tickets con Carale</span>
+            <span>Analizar Tickets con Caralita</span>
           </Link>
         </div>
       </div>
@@ -145,11 +145,11 @@ export default function TicketsPage() {
                 </span>
                 <Link
                   href={`/nora?prompt=${encodeURIComponent(
-                    `Carale, asume el ticket ${ticket.id} del cliente ${ticket.cliente}: "${ticket.asunto}". Dime qué pasos técnicos o de facturación debemos ejecutar de inmediato.`
+                    `Caralita, asume el ticket ${ticket.id} del cliente ${ticket.cliente}: "${ticket.asunto}". Dime qué pasos técnicos o de facturación debemos ejecutar de inmediato.`
                   )}`}
                   className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold transition"
                 >
-                  Resolver con Carale
+                  Resolver con Caralita
                 </Link>
               </div>
             </div>

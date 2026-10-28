@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 
 export const metadata: Metadata = {
   title: "CARALE by Nora • Core Cloud ERP & Soporte FTTH",
-  description: "Sistema integral de gestión ISP con motor de IA Carale Nivel 3 y persistencia en Sistema Central",
+  description: "Sistema integral de gestión ISP con motor de IA Caralita Nivel 3 y persistencia en Sistema Central",
 };
 
 export default function RootLayout({
