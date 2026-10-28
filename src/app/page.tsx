@@ -10,6 +10,13 @@ import {
   Activity,
   Zap,
   TrendingUp,
+  Radio,
+  MapPin,
+  Wrench,
+  ExternalLink,
+  Navigation,
+  Clock,
+  Compass,
 } from "lucide-react";
 import { sql } from "@/lib/db";
 
@@ -164,6 +171,152 @@ export default async function DashboardSummaryPage() {
             <span className="text-xs text-cyan-400 font-medium">Gestión Caralita IA</span>
           </div>
           <p className="mt-2 text-[11px] text-slate-400">Reclamos técnicos persistidos</p>
+        </div>
+      </div>
+
+      {/* Widget Destacado: Radar de Cuadrillas (Live) */}
+      <div className="rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-slate-950 p-6 shadow-xl backdrop-blur-xl relative overflow-hidden">
+        {/* Glow de fondo */}
+        <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-800/80">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-inner">
+              <Radio className="h-5 w-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white tracking-tight">
+                  Radar de Cuadrillas (Live)
+                </h2>
+                {/* Indicador visual de conexión en vivo */}
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  GPS & PWA Conectados
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Seguimiento satelital y telemetría óptica de personal técnico desplegado en planta externa.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/tecnicos"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-semibold shadow-sm transition"
+              title="Abrir interfaz PWA móvil de técnicos"
+            >
+              <Navigation className="h-3.5 w-3.5 text-cyan-400" />
+              <span>Abrir PWA Técnicos</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Tarjetas de Cuadrillas Desplegadas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+          {/* Cuadrilla 1 (Registro principal requerido) */}
+          <div className="p-4 rounded-xl border border-cyan-500/30 bg-slate-900/80 shadow-md backdrop-blur-sm flex flex-col justify-between gap-3 hover:border-cyan-500/60 transition group">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 mt-0.5">
+                  <Wrench className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">Cuadrilla 1</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Interviniendo NAP
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-300 block font-medium mt-0.5">
+                    Técnico: Carlos Benítez
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/50 shrink-0">
+                GPS Activo ±8m
+              </span>
+            </div>
+
+            {/* Dirección traducida por Reverse Geocoding */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+              <div className="flex items-center gap-1.5 text-slate-300 truncate pr-2">
+                <MapPin className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                <span className="font-semibold text-slate-200 truncate">
+                  Av. San Martín 840, Ituzaingó
+                </span>
+              </div>
+
+              {/* Botón Ver en Mapa */}
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  "Av. San Martín 840, Ituzaingó"
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-cyan-500 hover:text-white text-xs font-semibold text-cyan-300 border border-slate-700/80 hover:border-cyan-400 shadow-sm transition"
+                title="Ver ubicación en Google Maps"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                <span>Ver en Mapa</span>
+                <ExternalLink className="h-3 w-3 opacity-70" />
+              </a>
+            </div>
+          </div>
+
+          {/* Cuadrilla 2 (Guardia de Empalmes) */}
+          <div className="p-4 rounded-xl border border-slate-800 bg-slate-900/50 shadow-sm flex flex-col justify-between gap-3 hover:border-slate-700 transition group">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="p-2.5 rounded-xl bg-slate-800 text-slate-400 border border-slate-700 mt-0.5">
+                  <Activity className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-white">Cuadrilla 2</span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                      En Ruta a Fusión OLT
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-300 block font-medium mt-0.5">
+                    Técnico: Marcos Maidana
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] font-mono text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700 shrink-0">
+                GPS Activo ±12m
+              </span>
+            </div>
+
+            {/* Dirección traducida por Reverse Geocoding */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-xs">
+              <div className="flex items-center gap-1.5 text-slate-300 truncate pr-2">
+                <MapPin className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                <span className="font-semibold text-slate-200 truncate">
+                  Calle Belgrano 420, Merlo
+                </span>
+              </div>
+
+              {/* Botón Ver en Mapa */}
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  "Calle Belgrano 420, Merlo"
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 border border-slate-700 shadow-sm transition"
+                title="Ver ubicación en Google Maps"
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                <span>Ver en Mapa</span>
+                <ExternalLink className="h-3 w-3 opacity-70" />
+              </a>
+            </div>
+          </div>
         </div>
       </div>
 
