@@ -70,11 +70,10 @@ function RevealSection({
       ref={ref}
       id={id}
       style={{ transitionDelay: `${delay}ms` }}
-      className={`transition-all duration-700 ease-out transform ${
-        isVisible
+      className={`transition-all duration-700 ease-out transform ${isVisible
           ? "opacity-100 translate-y-0"
           : "opacity-0 translate-y-8 pointer-events-none"
-      } ${className}`}
+        } ${className}`}
     >
       {children}
     </div>
@@ -660,27 +659,24 @@ export default function CaraleCorporativaUI() {
                 return (
                   <div
                     key={index}
-                    className={`flex gap-2.5 max-w-[88%] ${
-                      isUser ? "ml-auto flex-row-reverse" : "mr-auto"
-                    }`}
+                    className={`flex gap-2.5 max-w-[88%] ${isUser ? "ml-auto flex-row-reverse" : "mr-auto"
+                      }`}
                   >
                     <div
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                        isUser
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${isUser
                           ? "bg-gradient-to-tr from-cyan-600 to-blue-600 text-white"
                           : "bg-slate-800 text-cyan-400 border border-slate-700"
-                      }`}
+                        }`}
                     >
                       {isUser ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
                     </div>
 
                     <div className="space-y-1.5">
                       <div
-                        className={`rounded-2xl p-3 leading-relaxed shadow-sm ${
-                          isUser
+                        className={`rounded-2xl p-3 leading-relaxed shadow-sm ${isUser
                             ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-none"
                             : "bg-slate-800/90 border border-slate-700/70 text-slate-200 rounded-tl-none"
-                        }`}
+                          }`}
                       >
                         {msg.photoUrl && (
                           <div className="mb-2 rounded-xl overflow-hidden border border-white/20 max-w-[200px]">
@@ -782,11 +778,10 @@ export default function CaraleCorporativaUI() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className={`p-2 rounded-xl border transition ${
-                    selectedFile
+                  className={`p-2 rounded-xl border transition ${selectedFile
                       ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
                       : "bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border-slate-700"
-                  }`}
+                    }`}
                   title="Adjuntar comprobante o archivo"
                 >
                   <Paperclip className="h-4 w-4" />

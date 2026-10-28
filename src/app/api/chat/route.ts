@@ -5,6 +5,8 @@ import { sql } from "@/lib/db";
 import { NORA_SYSTEM_PROMPT } from "@/lib/nora-prompt";
 import { CARALITA_PUBLIC_PROMPT } from "@/lib/caralita-public-prompt";
 
+export const NORA_COPILOT_PROMPT = `Eres Nora, el Copilot IA interno del NOC de Carale Internet. Asistes a los operadores. Manual rápido: 1) Radar de Cuadrillas: Muestra técnicos en vivo. 2) QR Acceso Cuadrilla: Otorga acceso seguro a la PWA de campo. 3) Entrenamiento IA: Permite subir PDFs para actualizar el conocimiento de Caralita. 4) QR Portal Público: Comparte la web con clientes. Responde de forma técnica y servicial.`;
+
 export const dynamic = "force-dynamic";
 
 interface ChatMessage {
@@ -441,9 +443,13 @@ export async function POST(req: NextRequest) {
 
     let activePayload: TechnicalPayload | null = initialPayload;
 
-    // Enrutamiento inteligente de System Prompt: portal público vs consola técnica NOC
+    // Enrutamiento inteligente de System Prompt: portal público vs admin copilot vs consola técnica NOC
     const selectedSystemPrompt =
-      source === "portal" ? CARALITA_PUBLIC_PROMPT : NORA_SYSTEM_PROMPT;
+      source === "portal"
+        ? CARALITA_PUBLIC_PROMPT
+        : source === "admin-copilot"
+        ? NORA_COPILOT_PROMPT
+        : NORA_SYSTEM_PROMPT;
 
     // Preparar mensajes base con System Prompt y memoria viva
     const conversationMessages: any[] = [

@@ -19,7 +19,9 @@ import {
   X,
   Wrench,
   ShieldAlert,
+  Sparkles,
 } from "lucide-react";
+import NoraCopilot from "@/components/NoraCopilot";
 
 interface SidebarLink {
   name: string;
@@ -44,6 +46,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showNotification, setShowNotification] = useState(true);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showTechQrModal, setShowTechQrModal] = useState(false);
+  const [showCopilot, setShowCopilot] = useState(false);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchTerm.trim()) {
@@ -233,6 +236,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span>Core Sincronizado</span>
             </div>
 
+            {/* Botón Nora Copilot (Drawer Asistente NOC) */}
+            <button
+              onClick={() => setShowCopilot(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-gradient-to-r from-indigo-500/20 via-purple-500/15 to-cyan-500/20 hover:from-indigo-500/30 hover:to-cyan-500/30 text-xs font-bold text-indigo-300 hover:text-white shadow-md shadow-indigo-500/15 transition-all"
+              title="Abrir Nora Copilot - Asistente Operativo del NOC"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
+              <span className="hidden sm:inline">Nora Copilot</span>
+            </button>
+
             {/* Botón Compartir Portal (QR) */}
             <button
               onClick={() => setShowQrModal(true)}
@@ -391,6 +404,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       )}
+
+      {/* Parche Aislado: Nora Copilot Overlay / Drawer Lateral */}
+      <NoraCopilot isOpen={showCopilot} onClose={() => setShowCopilot(false)} />
     </div>
   );
 }
