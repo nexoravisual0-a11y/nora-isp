@@ -2,8 +2,70 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Users, Filter, Plus, Wifi, WifiOff, AlertCircle, Bot, Check, RefreshCw, Loader2, X, UserPlus } from "lucide-react";
-import { getClientes, crearCliente, ClienteFTTH } from "@/actions/ispcube-actions";
+import {
+  Users,
+  Filter,
+  Plus,
+  Wifi,
+  WifiOff,
+  AlertCircle,
+  Bot,
+  Check,
+  RefreshCw,
+  Loader2,
+  X,
+  UserPlus,
+  CreditCard,
+  Network,
+  Phone,
+  Mail,
+  MapPin,
+  FileText,
+} from "lucide-react";
+import {
+  getClientes,
+  crearCliente,
+  getCajasNapList,
+  ClienteFTTH,
+} from "@/actions/ispcube-actions";
+import SmartSelect from "@/components/ui/SmartSelect";
+
+const SUGERENCIAS_PLANES = [
+  "Fibra 50 Mbps Residencial",
+  "Fibra 100 Mbps Residencial",
+  "Fibra 300 Mbps Simétrico",
+  "Fibra Corporativa 500 Mbps + IP Fija",
+];
+
+const SUGERENCIAS_OLTS = [
+  "Huawei MA5800",
+  "ZTE C320",
+  "FiberHome AN5516",
+  "V-SOL V1600G",
+  "OLT-HUAWEI-01 (Pon 1/1)",
+  "OLT-FIBERHOME-02 (Pon 2/4)",
+];
+
+const SUGERENCIAS_CONDICION_FISCAL = [
+  "Consumidor Final",
+  "Monotributo",
+  "Responsable Inscripto",
+  "Jubilado / Pasivo",
+  "Exento",
+];
+
+const FORM_INICIAL = {
+  nombre: "",
+  dni: "",
+  condicionFiscal: "Consumidor Final",
+  domicilio: "",
+  telefono: "",
+  correo: "",
+  plan: "Fibra 100 Mbps Residencial",
+  oltConectada: "Huawei MA5800",
+  cajaNap: "NAP-01 (Barrio Centro)",
+  ipPppoe: "",
+};
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<ClienteFTTH[]>([]);
@@ -15,13 +77,14 @@ export default function ClientesPage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    nombre: "",
-    plan: "Fibra 100 Mbps Residencial",
-    ipPppoe: "",
-    cajaNap: "NAP-01 (Barrio Centro)",
-    oltConectada: "OLT-HUAWEI-01 (Pon 1/1)",
-  });
+  const [cajasNapOptions, setCajasNapOptions] = useState<string[]>([
+    "NAP-01 (Barrio Centro)",
+    "NAP-02 (Barrio Norte)",
+    "NAP-03 (Barrio Sur)",
+    "NAP-04 (Barrio Centro)",
+    "NAP-05 (Parque Industrial)",
+  ]);
+  const [formData, setFormData] = useState(FORM_INICIAL);
 
   const fetchClientesData = async () => {
     setIsLoading(true);
@@ -37,6 +100,22 @@ export default function ClientesPage() {
     }
   };
 
+  const fetchCajasNap = async () => {
+    try {
+      const naps = await getCajasNapList();
+      if (naps.length > 0) {
+        setCajasNapOptions(naps);
+      }
+    } catch (e) {
+      console.error("[ERROR FETCH CAJAS NAP]:", e);
+    }
+  };
+
+  useEffect(() => {
+    fetchClientesData();
+    fetchCajasNap();
+  }, []);
+
   const handleCrearCliente = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSaving) return;
@@ -45,19 +124,18 @@ export default function ClientesPage() {
     try {
       await crearCliente({
         nombre: formData.nombre,
+        dni: formData.dni,
+        condicionFiscal: formData.condicionFiscal,
+        domicilio: formData.domicilio,
+        telefono: formData.telefono,
+        correo: formData.correo,
         plan: formData.plan,
-        ipPppoe: formData.ipPppoe,
-        cajaNap: formData.cajaNap,
         oltConectada: formData.oltConectada,
+        cajaNap: formData.cajaNap,
+        ipPppoe: formData.ipPppoe,
       });
       setIsModalOpen(false);
-      setFormData({
-        nombre: "",
-        plan: "Fibra 100 Mbps Residencial",
-        ipPppoe: "",
-        cajaNap: "NAP-01 (Barrio Centro)",
-        oltConectada: "OLT-HUAWEI-01 (Pon 1/1)",
-      });
+      setFormData(FORM_INICIAL);
       await fetchClientesData();
     } catch (err: unknown) {
       console.error("[ERROR AL CREAR CLIENTE]:", err);
@@ -221,7 +299,15 @@ export default function ClientesPage() {
                   <tr key={cliente.id} className="hover:bg-slate-800/40 transition">
                     <td className="py-3.5 px-4">
                       <span className="font-semibold text-white block text-sm">{cliente.nombre}</span>
-                      <span className="text-[11px] text-slate-400 font-mono">{cliente.id}</span>
+                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-slate-400 font-mono">
+                        <span>{cliente.id}</span>
+                        {cliente.dni && <span>• DNI: {cliente.dni}</span>}
+                      </div>
+                      {cliente.telefono && (
+                        <span className="text-[10px] text-emerald-400/90 font-mono block mt-0.5">
+                          Tel: {cliente.telefono}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 text-slate-300">{cliente.plan}</td>
                     <td className="py-3.5 px-4 font-mono text-cyan-400">{cliente.ipPppoe}</td>
@@ -282,20 +368,25 @@ export default function ClientesPage() {
         </div>
       </div>
 
-      {/* Modal de Alta de Nuevo Abonado (Glassmorphism Oscuro) */}
+      {/* Modal de Alta de Nuevo Abonado (Glassmorphism Oscuro - 2 Columnas) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-lg rounded-2xl border border-slate-700/80 bg-slate-900/95 shadow-2xl backdrop-blur-xl p-6 text-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-2xl border border-slate-700/80 bg-slate-900/95 shadow-2xl backdrop-blur-2xl p-6 sm:p-7 text-slate-100">
             {/* Header del Modal */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-5 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-inner">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500/20 to-blue-600/20 text-cyan-400 border border-cyan-500/30 shadow-inner">
                   <UserPlus className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-white">Nuevo Abonado FTTH</h3>
+                  <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                    Nuevo Abonado FTTH
+                    <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      Neon DB Live
+                    </span>
+                  </h3>
                   <p className="text-xs text-slate-400">
-                    Registro directo en Neon Postgres y aprovisionamiento de red
+                    Aprovisionamiento integral: facturación, contacto WhatsApp y parámetros de red
                   </p>
                 </div>
               </div>
@@ -303,7 +394,7 @@ export default function ClientesPage() {
                 type="button"
                 onClick={() => !isSaving && setIsModalOpen(false)}
                 disabled={isSaving}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition disabled:opacity-40"
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition disabled:opacity-40"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -311,120 +402,209 @@ export default function ClientesPage() {
 
             {/* Alerta de Error en el Modal */}
             {modalError && (
-              <div className="mb-4 p-3 rounded-xl border border-rose-500/30 bg-rose-950/30 text-rose-300 text-xs flex items-center gap-2">
+              <div className="mb-4 p-3 rounded-xl border border-rose-500/30 bg-rose-950/30 text-rose-300 text-xs flex items-center gap-2 shrink-0">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{modalError}</span>
               </div>
             )}
 
-            {/* Formulario */}
-            <form onSubmit={handleCrearCliente} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Nombre Completo / Razón Social <span className="text-rose-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ej. Martín Alejandro Paz"
-                  value={formData.nombre}
-                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  disabled={isSaving}
-                  className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition disabled:opacity-50"
-                />
-              </div>
+            {/* Formulario en 2 Columnas */}
+            <form onSubmit={handleCrearCliente} className="flex-1 flex flex-col min-h-0">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-y-auto pr-1 pb-4">
+                {/* Sección 1: Datos del Titular */}
+                <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                    <CreditCard className="h-4 w-4 text-cyan-400" />
+                    <span>1. Datos del Titular (Facturación y Contacto)</span>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Plan Contratado <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. Fibra 100 Mbps Residencial"
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Nombre Completo / Razón Social <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Lucas Matías Fernandez"
+                      value={formData.nombre}
+                      onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                      disabled={isSaving}
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                        DNI o CUIT <span className="text-rose-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej. 38123456 / 20-38123456-9"
+                        value={formData.dni}
+                        onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
+                        disabled={isSaving}
+                        className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono transition disabled:opacity-50"
+                      />
+                    </div>
+
+                    <SmartSelect
+                      label="Condición Fiscal"
+                      value={formData.condicionFiscal}
+                      onChange={(val) => setFormData({ ...formData, condicionFiscal: val })}
+                      options={SUGERENCIAS_CONDICION_FISCAL}
+                      placeholder="Elegir condición..."
+                      customPlaceholder="Ej. Entidad Pública / Club"
+                      disabled={isSaving}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                      Domicilio de Instalación <span className="text-rose-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. Av. San Martín 1420, Dpto 2B"
+                      value={formData.domicilio}
+                      onChange={(e) => setFormData({ ...formData, domicilio: e.target.value })}
+                      disabled={isSaving}
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition disabled:opacity-50"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-emerald-400" />
+                          Teléfono Móvil <span className="text-rose-400">*</span>
+                        </span>
+                        <span className="text-[10px] text-emerald-400/90 font-medium">WhatsApp</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej. +5493786414533"
+                        value={formData.telefono}
+                        onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                        disabled={isSaving}
+                        className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono transition disabled:opacity-50"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5 text-slate-400" />
+                        Correo Electrónico
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="cliente@ejemplo.com"
+                        value={formData.correo}
+                        onChange={(e) => setFormData({ ...formData, correo: e.target.value })}
+                        disabled={isSaving}
+                        className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition disabled:opacity-50"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sección 2: Parámetros Técnicos (FTTH) */}
+                <div className="rounded-xl border border-slate-800 bg-slate-950/50 p-4 space-y-4">
+                  <div className="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-bold text-cyan-400 uppercase tracking-wider">
+                    <Network className="h-4 w-4 text-cyan-400" />
+                    <span>2. Parámetros Técnicos (FTTH & Red)</span>
+                  </div>
+
+                  <SmartSelect
+                    label="Plan Contratado"
                     value={formData.plan}
-                    onChange={(e) => setFormData({ ...formData, plan: e.target.value })}
-                    disabled={isSaving}
-                    className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition disabled:opacity-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    IP PPPoE <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    type="text"
+                    onChange={(val) => setFormData({ ...formData, plan: val })}
+                    options={SUGERENCIAS_PLANES}
+                    placeholder="Elegir plan..."
+                    customPlaceholder="Ej. Plan Gamer 600 Mbps Dedicado"
                     required
-                    placeholder="Ej. 100.64.15.55"
-                    value={formData.ipPppoe}
-                    onChange={(e) => setFormData({ ...formData, ipPppoe: e.target.value })}
                     disabled={isSaving}
-                    className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono transition disabled:opacity-50"
                   />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Caja NAP <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. NAP-03 (Barrio Sur)"
-                    value={formData.cajaNap}
-                    onChange={(e) => setFormData({ ...formData, cajaNap: e.target.value })}
-                    disabled={isSaving}
-                    className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition disabled:opacity-50"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    OLT Conectada <span className="text-rose-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. OLT-HUAWEI-01 (Pon 1/2)"
+                  <SmartSelect
+                    label="OLT Conectada"
                     value={formData.oltConectada}
-                    onChange={(e) => setFormData({ ...formData, oltConectada: e.target.value })}
+                    onChange={(val) => setFormData({ ...formData, oltConectada: val })}
+                    options={SUGERENCIAS_OLTS}
+                    placeholder="Elegir equipo OLT..."
+                    customPlaceholder="Ej. V-SOL V1600G (Pon 1/4)"
+                    required
                     disabled={isSaving}
-                    className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition disabled:opacity-50"
                   />
+
+                  <SmartSelect
+                    label="Caja NAP de Distribución"
+                    value={formData.cajaNap}
+                    onChange={(val) => setFormData({ ...formData, cajaNap: val })}
+                    options={cajasNapOptions}
+                    placeholder="Elegir Caja NAP..."
+                    customPlaceholder="Ej. NAP-08 (Barrio Estación)"
+                    required
+                    disabled={isSaving}
+                  />
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span>
+                        IP PPPoE / Framed-IP <span className="text-rose-400">*</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400">Pool CGNAT o Pública</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Ej. 100.64.15.70"
+                      value={formData.ipPppoe}
+                      onChange={(e) => setFormData({ ...formData, ipPppoe: e.target.value })}
+                      disabled={isSaving}
+                      className="w-full rounded-xl border border-slate-700/80 bg-slate-800/80 px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono transition disabled:opacity-50"
+                    />
+                  </div>
                 </div>
               </div>
 
               {/* Botones de Acción */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  disabled={isSaving}
-                  className="px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition disabled:opacity-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-semibold text-white shadow-lg shadow-cyan-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      <span>Registrando en Neon...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-3.5 w-3.5" />
-                      <span>Guardar Abonado</span>
-                    </>
-                  )}
-                </button>
+              <div className="flex items-center justify-between pt-4 border-t border-slate-800 mt-2 shrink-0">
+                <span className="text-[11px] text-slate-400 hidden sm:inline">
+                  Campos con <span className="text-rose-400">*</span> son obligatorios.
+                </span>
+                <div className="flex items-center gap-3 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    disabled={isSaving}
+                    className="px-4 py-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-semibold text-white shadow-lg shadow-cyan-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Aprovisionando en Neon...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4" />
+                        <span>Aprovisionar Abonado</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

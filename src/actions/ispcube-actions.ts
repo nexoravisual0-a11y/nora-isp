@@ -12,6 +12,11 @@ export interface ClienteFTTH {
   oltConectada: string;
   cajaNap: string;
   potenciaDbm: number;
+  dni?: string;
+  domicilio?: string;
+  telefono?: string;
+  correo?: string;
+  condicionFiscal?: string;
 }
 
 export interface NuevoClienteInput {
@@ -20,10 +25,14 @@ export interface NuevoClienteInput {
   ipPppoe: string;
   cajaNap: string;
   oltConectada: string;
+  dni?: string;
+  domicilio?: string;
+  telefono?: string;
+  correo?: string;
+  condicionFiscal?: string;
   estadoPppoe?: "Conectado" | "Desconectado";
   estadoFacturacion?: "Al día" | "Moroso" | "Pendiente";
   potenciaDbm?: number;
-  telefono?: string;
 }
 
 export interface TicketFTTH {
@@ -62,7 +71,12 @@ export async function getClientes(): Promise<ClienteFTTH[]> {
         estado_facturacion, 
         olt_conectada, 
         caja_nap, 
-        potencia_dbm
+        potencia_dbm,
+        dni,
+        domicilio,
+        telefono,
+        correo,
+        condicion_fiscal
       FROM clientes
       ORDER BY id ASC;
     `;
@@ -77,6 +91,11 @@ export async function getClientes(): Promise<ClienteFTTH[]> {
       oltConectada: r.olt_conectada ? String(r.olt_conectada) : "N/A",
       cajaNap: r.caja_nap ? String(r.caja_nap) : "N/A",
       potenciaDbm: r.potencia_dbm !== null ? Number(r.potencia_dbm) : -20.0,
+      dni: r.dni ? String(r.dni) : undefined,
+      domicilio: r.domicilio ? String(r.domicilio) : undefined,
+      telefono: r.telefono ? String(r.telefono) : undefined,
+      correo: r.correo ? String(r.correo) : undefined,
+      condicionFiscal: r.condicion_fiscal ? String(r.condicion_fiscal) : undefined,
     }));
   } catch (error) {
     console.error("[SERVER_ACTION getClientes ERROR]:", error);
@@ -85,7 +104,39 @@ export async function getClientes(): Promise<ClienteFTTH[]> {
 }
 
 /**
- * Registra un nuevo abonado en Neon Serverless Postgres.
+ * Obtiene las cajas NAP dinámicamente desde nodos y clientes para sugerencias en el selector.
+ */
+export async function getCajasNapList(): Promise<string[]> {
+  try {
+    const rows = await sql`
+      SELECT DISTINCT nombre FROM nodos WHERE tipo = 'NAP'
+      UNION
+      SELECT DISTINCT caja_nap AS nombre FROM clientes WHERE caja_nap IS NOT NULL AND caja_nap != ''
+      ORDER BY nombre ASC;
+    `;
+    const names = rows.map((r) => String(r.nombre)).filter(Boolean);
+    if (names.length > 0) return names;
+    return [
+      "NAP-01 (Barrio Centro)",
+      "NAP-02 (Barrio Norte)",
+      "NAP-03 (Barrio Sur)",
+      "NAP-04 (Barrio Centro)",
+      "NAP-05 (Parque Industrial)",
+    ];
+  } catch (e) {
+    console.error("[getCajasNapList ERROR]:", e);
+    return [
+      "NAP-01 (Barrio Centro)",
+      "NAP-02 (Barrio Norte)",
+      "NAP-03 (Barrio Sur)",
+      "NAP-04 (Barrio Centro)",
+      "NAP-05 (Parque Industrial)",
+    ];
+  }
+}
+
+/**
+ * Registra un nuevo abonado en Neon Serverless Postgres con información de facturación y técnica.
  */
 export async function crearCliente(clienteData: NuevoClienteInput): Promise<ClienteFTTH> {
   try {
@@ -115,7 +166,11 @@ export async function crearCliente(clienteData: NuevoClienteInput): Promise<Clie
     const estadoPppoe = clienteData.estadoPppoe || "Conectado";
     const estadoFacturacion = clienteData.estadoFacturacion || "Al día";
     const potenciaDbm = clienteData.potenciaDbm ?? -19.5;
-    const telefono = clienteData.telefono || null;
+    const dni = clienteData.dni?.trim() || null;
+    const domicilio = clienteData.domicilio?.trim() || null;
+    const telefono = clienteData.telefono?.trim() || null;
+    const correo = clienteData.correo?.trim() || null;
+    const condicionFiscal = clienteData.condicionFiscal?.trim() || null;
 
     const rows = await sql`
       INSERT INTO clientes (
@@ -128,7 +183,11 @@ export async function crearCliente(clienteData: NuevoClienteInput): Promise<Clie
         olt_conectada, 
         caja_nap, 
         potencia_dbm,
-        telefono
+        telefono,
+        dni,
+        domicilio,
+        correo,
+        condicion_fiscal
       )
       VALUES (
         ${clienteId},
@@ -140,7 +199,11 @@ export async function crearCliente(clienteData: NuevoClienteInput): Promise<Clie
         ${clienteData.oltConectada.trim()},
         ${clienteData.cajaNap.trim()},
         ${potenciaDbm},
-        ${telefono}
+        ${telefono},
+        ${dni},
+        ${domicilio},
+        ${correo},
+        ${condicionFiscal}
       )
       RETURNING 
         id, 
@@ -151,7 +214,12 @@ export async function crearCliente(clienteData: NuevoClienteInput): Promise<Clie
         estado_facturacion, 
         olt_conectada, 
         caja_nap, 
-        potencia_dbm;
+        potencia_dbm,
+        dni,
+        domicilio,
+        telefono,
+        correo,
+        condicion_fiscal;
     `;
 
     const r = rows[0];
@@ -165,6 +233,11 @@ export async function crearCliente(clienteData: NuevoClienteInput): Promise<Clie
       oltConectada: r.olt_conectada ? String(r.olt_conectada) : "N/A",
       cajaNap: r.caja_nap ? String(r.caja_nap) : "N/A",
       potenciaDbm: r.potencia_dbm !== null ? Number(r.potencia_dbm) : -19.5,
+      dni: r.dni ? String(r.dni) : undefined,
+      domicilio: r.domicilio ? String(r.domicilio) : undefined,
+      telefono: r.telefono ? String(r.telefono) : undefined,
+      correo: r.correo ? String(r.correo) : undefined,
+      condicionFiscal: r.condicion_fiscal ? String(r.condicion_fiscal) : undefined,
     };
   } catch (error) {
     console.error("[SERVER_ACTION crearCliente ERROR]:", error);
