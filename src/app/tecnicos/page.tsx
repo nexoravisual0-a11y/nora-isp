@@ -52,7 +52,9 @@ export default function TecnicoPWAUI() {
   // Estado de Jornada Técnica y Geolocalización
   const [jornadaActiva, setJornadaActiva] = useState(false);
   const [coordenadasGPS, setCoordenadasGPS] = useState<CoordenadasGPS | null>(null);
+  const [direccionLegible, setDireccionLegible] = useState<string | null>(null);
   const [cargandoGPS, setCargandoGPS] = useState(false);
+  const [cargandoDireccion, setCargandoDireccion] = useState(false);
   const [errorGPS, setErrorGPS] = useState<string | null>(null);
 
   // Estado del Chat y Adjuntos
@@ -89,14 +91,16 @@ export default function TecnicoPWAUI() {
   }, [attachedPhoto]);
 
   /**
-   * Misión 2: Conexión del Módulo GPS (API Nativa)
-   * Inicia o finaliza la jornada obteniendo coordenadas reales de geolocalización.
+   * Misión 2: Conexión del Módulo GPS (API Nativa) + Reverse Geocoding
+   * Inicia o finaliza la jornada obteniendo coordenadas reales de geolocalización
+   * y traduciéndolas a calles/barrios mediante la API de Nominatim.
    */
   const handleToggleJornada = () => {
     if (jornadaActiva) {
       // Finalizar jornada
       setJornadaActiva(false);
       setCoordenadasGPS(null);
+      setDireccionLegible(null);
       setErrorGPS(null);
       return;
     }
@@ -111,15 +115,76 @@ export default function TecnicoPWAUI() {
     setErrorGPS(null);
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude, accuracy } = position.coords;
+        const lat = Number(latitude.toFixed(6));
+        const lng = Number(longitude.toFixed(6));
+        const prec = Math.round(accuracy);
+
+        // Guardado de coordenadas en crudo para la base de datos y telemetría
         setCoordenadasGPS({
-          lat: Number(latitude.toFixed(6)),
-          lng: Number(longitude.toFixed(6)),
-          precision: Math.round(accuracy),
+          lat,
+          lng,
+          precision: prec,
         });
         setJornadaActiva(true);
         setCargandoGPS(false);
+
+        // Reverse Geocoding: Traducir coordenadas a dirección legible
+        setCargandoDireccion(true);
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
+            {
+              headers: {
+                "Accept-Language": "es",
+              },
+            }
+          );
+
+          if (res.ok) {
+            const data = await res.json();
+            const addr = data.address || {};
+            const calle = addr.road || addr.street || addr.pedestrian || "";
+            const numero = addr.house_number || "";
+            const barrio =
+              addr.suburb ||
+              addr.neighbourhood ||
+              addr.city_district ||
+              addr.quarter ||
+              "";
+            const ciudad =
+              addr.city ||
+              addr.town ||
+              addr.municipality ||
+              addr.village ||
+              "";
+
+            const partes: string[] = [];
+            if (calle) {
+              partes.push(numero ? `${calle} ${numero}` : calle);
+            }
+            if (barrio) {
+              partes.push(barrio);
+            } else if (ciudad) {
+              partes.push(ciudad);
+            }
+
+            const direccionFinal =
+              partes.length > 0
+                ? partes.join(", ")
+                : (data.display_name?.split(",").slice(0, 2).join(",") || "Ubicación GPS capturada");
+
+            setDireccionLegible(direccionFinal);
+          } else {
+            setDireccionLegible("Ubicación GPS capturada");
+          }
+        } catch (geoErr) {
+          console.warn("[REVERSE_GEOCODING_WARN]:", geoErr);
+          setDireccionLegible("Ubicación GPS capturada");
+        } finally {
+          setCargandoDireccion(false);
+        }
       },
       (err) => {
         console.error("[GPS_ERROR]:", err);
@@ -188,10 +253,13 @@ export default function TecnicoPWAUI() {
       setAttachedPhoto(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
 
-      // Inyección de coordenadas GPS activas si la jornada está iniciada
+      // Inyección de coordenadas GPS y dirección física si la jornada está iniciada
       let promptEnviado = promptText;
       if (coordenadasGPS) {
-        promptEnviado += `\n[TELEMETRÍA GPS TÉCNICO: Lat ${coordenadasGPS.lat}, Lng ${coordenadasGPS.lng} (Precisión: ±${coordenadasGPS.precision}m)]`;
+        const descUbicacion = direccionLegible
+          ? `${direccionLegible} [Lat: ${coordenadasGPS.lat}, Lng: ${coordenadasGPS.lng}, Precisión: ±${coordenadasGPS.precision}m]`
+          : `Lat ${coordenadasGPS.lat}, Lng ${coordenadasGPS.lng} [Precisión: ±${coordenadasGPS.precision}m]`;
+        promptEnviado += `\n[TELEMETRÍA GPS TÉCNICO EN CAMPO: ${descUbicacion}]`;
       }
 
       // 3. Envío real a /api/chat con source: 'noc'
@@ -289,20 +357,32 @@ export default function TecnicoPWAUI() {
         </div>
       </header>
 
-      {/* Barra de Estado GPS en Vivo */}
+      {/* Barra de Estado GPS en Vivo con Dirección Legible (Reverse Geocoding) */}
       {jornadaActiva && coordenadasGPS && (
-        <div className="bg-slate-900/80 border-b border-slate-800/90 px-4 py-1.5 flex items-center justify-between text-[11px] text-slate-300 backdrop-blur shrink-0 font-mono">
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
+        <div className="bg-slate-900/90 border-b border-slate-800/90 px-4 py-2 flex items-center justify-between text-xs text-slate-300 backdrop-blur shrink-0 shadow-inner">
+          <div className="flex items-center gap-2 min-w-0 pr-2">
+            <span className="relative flex h-2 w-2 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
             </span>
-            <span className="text-emerald-400 font-semibold">GPS Activo:</span>
-            <span>
-              {coordenadasGPS.lat}, {coordenadasGPS.lng}
+            <MapPin className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+            <div className="min-w-0">
+              <span className="font-semibold text-white truncate block">
+                {cargandoDireccion ? (
+                  <span className="text-slate-400 italic font-mono text-[11px]">
+                    Identificando calle y barrio...
+                  </span>
+                ) : (
+                  direccionLegible || "Ubicación GPS capturada"
+                )}
+              </span>
+            </div>
+          </div>
+          <div className="shrink-0 text-right">
+            <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/50 block">
+              ±{coordenadasGPS.precision}m
             </span>
           </div>
-          <span className="text-slate-400 text-[10px]">±{coordenadasGPS.precision}m</span>
         </div>
       )}
 
