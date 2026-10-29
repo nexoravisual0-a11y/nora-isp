@@ -59,13 +59,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
   };
 
-  // Si estamos en el portal público o en la PWA de técnicos, renderizamos sin el layout del NOC interno
+  // Si estamos en el portal público o en la PWA de técnicos, renderizamos sin ningún contenedor limitante
   if (pathname === "/portal" || pathname === "/tecnicos") {
-    return (
-      <div className="h-full w-full bg-slate-950 text-slate-100 font-sans overflow-hidden">
-        {children}
-      </div>
-    );
+    return <>{children}</>;
   }
 
   return (
