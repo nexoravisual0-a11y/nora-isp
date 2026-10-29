@@ -9,12 +9,23 @@ export const NORA_COPILOT_PROMPT = `Eres Nora, el Copilot IA interno del NOC de 
 
 export const dynamic = "force-dynamic";
 
+// Configuración de Arquitectura Local-First (Ollama)
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "qwen2.5:latest";
+const USE_EXTERNAL_API = process.env.USE_EXTERNAL_API === "true";
+
 interface ChatMessage {
   role: "system" | "user" | "assistant" | "tool";
   content?: string | null;
   tool_call_id?: string;
   name?: string;
   tool_calls?: Groq.Chat.ChatCompletionMessageToolCall[];
+}
+
+interface OllamaMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+  images?: string[];
 }
 
 export interface TechnicalItem {
@@ -64,7 +75,7 @@ interface NodoRow {
   atenuacion_promedio: string | null;
 }
 
-// Definición de Herramientas para Caralita (Function Calling)
+// Definición de Herramientas para Caralita (Function Calling en API comercial)
 const NORA_TOOLS: Groq.Chat.ChatCompletionTool[] = [
   {
     type: "function",
@@ -112,6 +123,64 @@ const NORA_TOOLS: Groq.Chat.ChatCompletionTool[] = [
     },
   },
 ];
+
+/**
+ * Función ejecutora de llamada al motor local Ollama (Qwen / LLaMA / DeepSeek)
+ */
+async function llamarOllamaChat({
+  messages,
+  model = OLLAMA_MODEL,
+  temperature = 0.4,
+  timeoutMs = 12000,
+}: {
+  messages: OllamaMessage[];
+  model?: string;
+  temperature?: number;
+  timeoutMs?: number;
+}): Promise<{ content: string; model: string } | null> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: false,
+        options: {
+          temperature,
+        },
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => "");
+      console.warn(`[OLLAMA HTTP ${res.status}]: ${errBody.slice(0, 150)}`);
+      return null;
+    }
+
+    const data = await res.json();
+    const content = data.message?.content?.trim();
+    if (!content) return null;
+
+    return {
+      content,
+      model: data.model || model,
+    };
+  } catch (err: unknown) {
+    clearTimeout(timeoutId);
+    const errMessage = err instanceof Error ? err.message : String(err);
+    console.warn(
+      `[OLLAMA LOCAL-FIRST FALLBACK] No se pudo conectar a Ollama en ${OLLAMA_BASE_URL} (${errMessage}). Activando colchón de seguridad automático hacia API comercial...`
+    );
+    return null;
+  }
+}
 
 /**
  * Función ejecutora del Tool: Busca cliente en Neon Postgres por DNI, teléfono o ID
@@ -404,17 +473,6 @@ async function buildRealtimeContextAndPayload(
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.GROQ_API_KEY) {
-    return NextResponse.json(
-      {
-        error:
-          "GROQ_API_KEY no está configurada en el servidor. Agrégala al archivo .env y reinicia el servidor.",
-        code: "GROQ_KEY_MISSING",
-      },
-      { status: 500 }
-    );
-  }
-
   try {
     const body = await req.json();
     const {
@@ -451,7 +509,89 @@ export async function POST(req: NextRequest) {
         ? NORA_COPILOT_PROMPT
         : NORA_SYSTEM_PROMPT;
 
-    // Preparar mensajes base con System Prompt y memoria viva
+    // =========================================================================
+    // ESTRATEGIA LOCAL-FIRST: Intentar motor local Ollama primero
+    // =========================================================================
+    if (!USE_EXTERNAL_API) {
+      try {
+        const ollamaMessages: OllamaMessage[] = [
+          { role: "system", content: selectedSystemPrompt },
+        ];
+
+        if (contextMessage?.content) {
+          ollamaMessages.push({ role: "system", content: contextMessage.content });
+        }
+
+        const rawUserMsgs = messages.filter((m: ChatMessage) => m.role !== "system");
+
+        for (let i = 0; i < rawUserMsgs.length; i++) {
+          const m = rawUserMsgs[i];
+          const isLastUser = i === rawUserMsgs.length - 1 && m.role === "user";
+          let textContent = "";
+
+          if (typeof m.content === "string") {
+            textContent = m.content;
+          } else if (Array.isArray(m.content)) {
+            textContent = m.content
+              .filter((c: any) => c.type === "text")
+              .map((c: any) => c.text)
+              .join(" ");
+          }
+
+          const oMsg: OllamaMessage = {
+            role: m.role === "assistant" ? "assistant" : "user",
+            content: textContent,
+          };
+
+          if (isLastUser && image && typeof image === "string") {
+            const cleanBase64 = image.replace(/^data:image\/[a-zA-Z]+;base64,/, "").trim();
+            if (cleanBase64) {
+              oMsg.images = [cleanBase64];
+            }
+          }
+
+          ollamaMessages.push(oMsg);
+        }
+
+        const ollamaRes = await llamarOllamaChat({
+          messages: ollamaMessages,
+          model: OLLAMA_MODEL,
+          temperature,
+          timeoutMs: 12000,
+        });
+
+        if (ollamaRes && ollamaRes.content) {
+          return NextResponse.json({
+            success: true,
+            role: "assistant",
+            content: ollamaRes.content,
+            technicalPayload: activePayload,
+            ticketsCreados: [],
+            contextInjected: Boolean(contextMessage),
+            provider: "ollama-local",
+            model: ollamaRes.model,
+          });
+        }
+      } catch (ollamaErr) {
+        console.warn("[OLLAMA LOCAL-FIRST FAILED]:", ollamaErr);
+      }
+    }
+
+    // =========================================================================
+    // COLCHÓN DE SEGURIDAD (FALLBACK): API Comercial (Groq / OpenAI)
+    // =========================================================================
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json(
+        {
+          error:
+            "El motor local Ollama no está disponible en este entorno y GROQ_API_KEY no está configurada como respaldo. Configura OLLAMA_BASE_URL o agrega GROQ_API_KEY a tus variables de entorno.",
+          code: "ALL_AI_ENGINES_UNAVAILABLE",
+        },
+        { status: 503 }
+      );
+    }
+
+    // Preparar mensajes base con System Prompt y memoria viva para Groq
     const conversationMessages: any[] = [
       { role: "system", content: selectedSystemPrompt },
       ...(contextMessage ? [contextMessage] : []),
@@ -502,7 +642,7 @@ export async function POST(req: NextRequest) {
 
     conversationMessages.push(...rawUserMessages);
 
-    // Llamada con soporte de visión y Function Calling
+    // Llamada con soporte de visión y Function Calling a Groq
     let initialCompletion;
     try {
       initialCompletion = await groq.chat.completions.create({
@@ -635,6 +775,7 @@ export async function POST(req: NextRequest) {
       technicalPayload: activePayload,
       ticketsCreados,
       contextInjected: Boolean(contextMessage),
+      provider: USE_EXTERNAL_API ? "groq-primary" : "groq-fallback",
       usage: initialCompletion.usage,
     });
   } catch (error: unknown) {

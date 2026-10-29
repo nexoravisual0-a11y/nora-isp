@@ -50,6 +50,71 @@ interface CoordenadasGPS {
   precision: number;
 }
 
+/**
+ * Tarea 1: Compresión Nativa de Imágenes en Cliente con HTML5 Canvas
+ * Redimensiona a max-width 1280px (manteniendo aspect ratio) y comprime en JPEG al 60% (0.6).
+ * Reduce imágenes de ~5MB a ~250KB en milisegundos directamente en el smartphone del técnico.
+ */
+async function compressImageClient(file: File): Promise<{ compressedBlob: Blob; compressedDataUrl: string }> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = () =>
+        resolve({ compressedBlob: file, compressedDataUrl: reader.result as string });
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_WIDTH = 1280;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_WIDTH) {
+          height = Math.round((height * MAX_WIDTH) / width);
+          width = MAX_WIDTH;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve({ compressedBlob: file, compressedDataUrl: e.target?.result as string });
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve({ compressedBlob: blob, compressedDataUrl });
+            } else {
+              resolve({ compressedBlob: file, compressedDataUrl });
+            }
+          },
+          "image/jpeg",
+          0.6
+        );
+      };
+      img.onerror = () => {
+        resolve({ compressedBlob: file, compressedDataUrl: e.target?.result as string });
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function TecnicoPWAInner() {
   const searchParams = useSearchParams();
   const techParam = searchParams.get("tech") || "";
@@ -73,6 +138,8 @@ function TecnicoPWAInner() {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [attachedPhoto, setAttachedPhoto] = useState<File | null>(null);
+  const [compressedBase64, setCompressedBase64] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -85,16 +152,43 @@ function TecnicoPWAInner() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isSending]);
 
-  // Manejo de previsualización de foto
+  // Manejo de previsualización de foto si no vino del canvas
   useEffect(() => {
     if (!attachedPhoto) {
       setPhotoPreview(null);
+      setCompressedBase64(null);
       return;
     }
-    const objectUrl = URL.createObjectURL(attachedPhoto);
-    setPhotoPreview(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [attachedPhoto]);
+    if (!compressedBase64) {
+      const objectUrl = URL.createObjectURL(attachedPhoto);
+      setPhotoPreview(objectUrl);
+      return () => URL.revokeObjectURL(objectUrl);
+    }
+  }, [attachedPhoto, compressedBase64]);
+
+  /**
+   * Tarea 1: Captura de Foto con Compresión Nativa HTML5 Canvas
+   */
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsCompressing(true);
+    try {
+      const { compressedBlob, compressedDataUrl } = await compressImageClient(file);
+      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+        type: "image/jpeg",
+      });
+      setAttachedPhoto(compressedFile);
+      setCompressedBase64(compressedDataUrl);
+      setPhotoPreview(compressedDataUrl);
+    } catch (err) {
+      console.warn("[CANVAS_COMPRESS_ERROR]:", err);
+      setAttachedPhoto(file);
+    } finally {
+      setIsCompressing(false);
+    }
+  };
 
   /**
    * Misión 2: Conexión del Módulo GPS (API Nativa) + Reverse Geocoding
@@ -221,10 +315,10 @@ function TecnicoPWAInner() {
     setChatError(null);
     setIsSending(true);
 
-    let base64Image: string | null = null;
+    let base64Image: string | null = compressedBase64;
 
     try {
-      if (attachedPhoto) {
+      if (attachedPhoto && !base64Image) {
         base64Image = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
@@ -569,6 +663,12 @@ function TecnicoPWAInner() {
 
       {/* Barra Inferior Fija para Input y Cámara */}
       <footer className="p-3 bg-slate-900/95 border-t border-slate-800 backdrop-blur-md shrink-0 space-y-2">
+        {isCompressing && (
+          <div className="flex items-center gap-2 text-[11px] text-cyan-400 font-mono py-0.5 animate-pulse">
+            <RefreshCw className="h-3 w-3 animate-spin" />
+            <span>Comprimiendo imagen con HTML5 Canvas (max 1280px / 60% JPEG)...</span>
+          </div>
+        )}
         <form onSubmit={handleSendMessage} className="flex items-center gap-2">
           <input
             ref={fileInputRef}
@@ -576,21 +676,19 @@ function TecnicoPWAInner() {
             accept="image/*"
             capture="environment"
             className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) setAttachedPhoto(file);
-            }}
+            onChange={handleFileChange}
           />
 
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
+            disabled={isCompressing}
             className={`p-2.5 rounded-xl border transition shadow-sm ${
               attachedPhoto
                 ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
                 : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
             }`}
-            title="Tomar o adjuntar foto técnica de la instalación"
+            title="Tomar o adjuntar foto técnica de la instalación (Compresión Canvas)"
           >
             <Camera className="h-5 w-5" />
           </button>
