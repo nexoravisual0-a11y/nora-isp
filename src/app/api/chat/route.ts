@@ -599,9 +599,8 @@ export async function POST(req: NextRequest) {
 
     const rawUserMessages = messages.filter((m: ChatMessage) => m.role !== "system");
 
-    // Inyección multimodal si el cliente/técnico adjuntó una foto o imagen
+    // Inyección de contexto de adjuntos para modelos de texto puro en API comercial
     if (image && typeof image === "string" && image.trim().length > 0) {
-      const imageUrl = image.startsWith("data:") ? image : `data:image/jpeg;base64,${image}`;
       let imageAttached = false;
 
       for (let i = rawUserMessages.length - 1; i >= 0; i--) {
@@ -610,15 +609,9 @@ export async function POST(req: NextRequest) {
             typeof rawUserMessages[i].content === "string" ? rawUserMessages[i].content : "";
           rawUserMessages[i] = {
             role: "user",
-            content: [
-              {
-                type: "text",
-                text:
-                  originalText ||
-                  "Analiza técnicamente esta imagen adjunta capturada por el técnico en campo (red FTTH, caja NAP, splitter, potencia en power meter o conector).",
-              },
-              { type: "image_url", image_url: { url: imageUrl } },
-            ],
+            content: originalText
+              ? `${originalText}\n\n[REGISTRO TÉCNICO / FOTO ADJUNTA]: Se adjuntó una imagen fotográfica de campo / comprobante procesada y comprimida en el cliente (max 1280px / 60% JPEG). Confirma la recepción del adjunto y procede con el análisis técnico y telemetría óptica.`
+              : "Se adjuntó una fotografía técnica de la instalación (red FTTH, caja NAP, splitter, potencia en power meter o comprobante) procesada y comprimida en el cliente. Confirma la recepción y asiste técnicamente.",
           };
           imageAttached = true;
           break;
@@ -628,21 +621,15 @@ export async function POST(req: NextRequest) {
       if (!imageAttached) {
         rawUserMessages.push({
           role: "user",
-          content: [
-            {
-              type: "text",
-              text:
-                "Analiza técnicamente esta imagen adjunta capturada por el técnico en campo (red FTTH, caja NAP, splitter, potencia en power meter o conector).",
-            },
-            { type: "image_url", image_url: { url: imageUrl } },
-          ],
+          content:
+            "Se adjuntó una fotografía técnica de la instalación (red FTTH, caja NAP, splitter, potencia en power meter o comprobante) procesada y comprimida en el cliente. Confirma la recepción y asiste técnicamente.",
         });
       }
     }
 
     conversationMessages.push(...rawUserMessages);
 
-    // Llamada con soporte de visión y Function Calling a Groq
+    // Llamada con soporte de Function Calling a Groq
     let initialCompletion;
     try {
       initialCompletion = await groq.chat.completions.create({
@@ -650,11 +637,11 @@ export async function POST(req: NextRequest) {
         model,
         temperature,
         max_tokens: 800,
-        tools: image ? undefined : NORA_TOOLS,
-        tool_choice: image ? undefined : "auto",
+        tools: NORA_TOOLS,
+        tool_choice: "auto",
       });
-    } catch (visionErr) {
-      console.warn("[GROQ VISION/TOOLS FALLBACK]:", visionErr);
+    } catch (apiErr) {
+      console.warn("[GROQ PRIMARY MODEL RETRY CON GPT-OSS-120B]:", apiErr);
       initialCompletion = await groq.chat.completions.create({
         messages: conversationMessages as Groq.Chat.ChatCompletionMessageParam[],
         model: "openai/gpt-oss-120b",
