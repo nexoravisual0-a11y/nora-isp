@@ -10,6 +10,20 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/store",
+        destination: "https://tinyurl.com/nexora-one",
+        permanent: false,
+      },
+      {
+        source: "/qr",
+        destination: "https://tinyurl.com/nexora-one",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

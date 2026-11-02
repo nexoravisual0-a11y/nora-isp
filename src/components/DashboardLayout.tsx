@@ -22,6 +22,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import NoraCopilot from "@/components/NoraCopilot";
+import NexoraBadge from "@/components/ui/NexoraBadge";
 
 interface SidebarLink {
   name: string;
@@ -185,10 +186,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
 
-          {/* Firma Oficial de la Agencia Desarrolladora */}
-          <div className="px-1 text-[10px] text-zinc-400 leading-relaxed border-t border-slate-800/70 pt-2.5">
+          {/* Firma Oficial de la Agencia Desarrolladora y Badge QR */}
+          <div className="px-1 text-[10px] text-zinc-400 leading-relaxed border-t border-slate-800/70 pt-2.5 space-y-1.5">
             <div>
-              Desarrollado por: <strong className="text-slate-200">Nexora One</strong> | Soporte:{" "}
+              <NexoraBadge />
+            </div>
+            <div>
+              Soporte:{" "}
               <a href="tel:3786414533" className="hover:text-cyan-400 text-zinc-300 transition font-mono">
                 3786414533
               </a>{" "}

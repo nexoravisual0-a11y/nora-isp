@@ -41,6 +41,7 @@ import {
   OrdenTrabajoTecnico,
   MensajeInterno,
 } from "@/actions/ispcube-actions";
+import NexoraBadge from "@/components/ui/NexoraBadge";
 
 /**
  * Compresión nativa de imágenes en cliente con HTML5 Canvas (max 1280px / 60% JPEG)
@@ -827,16 +828,23 @@ function TecnicoPWATrincheraInner() {
         </div>
       )}
 
-      {/* Footer Branding Nexora One */}
-      <footer className="fixed bottom-0 inset-x-0 bg-slate-950/95 border-t border-slate-800/80 p-2 text-center text-[10px] text-zinc-500 z-20">
-        Desarrollado por: <strong className="text-zinc-400">Nexora One</strong> | Soporte:{" "}
-        <a href="tel:3786414533" className="text-zinc-400 font-mono hover:text-cyan-400">
-          3786414533
-        </a>{" "}
-        | Email:{" "}
-        <a href="mailto:nexoraone@nexativanews.com.ar" className="text-zinc-400 font-mono hover:text-cyan-400">
-          nexoraone@nexativanews.com.ar
-        </a>
+      {/* Footer Branding Nexora One y Badge QR Dinámico */}
+      <footer className="fixed bottom-0 inset-x-0 bg-slate-950/95 border-t border-slate-800/80 p-2 text-center text-[10px] text-zinc-500 z-20 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <NexoraBadge />
+        <span className="hidden sm:inline text-slate-700">|</span>
+        <span>
+          Soporte:{" "}
+          <a href="tel:3786414533" className="text-zinc-400 font-mono hover:text-cyan-400">
+            3786414533
+          </a>
+        </span>
+        <span className="text-slate-700">|</span>
+        <span>
+          Email:{" "}
+          <a href="mailto:nexoraone@nexativanews.com.ar" className="text-zinc-400 font-mono hover:text-cyan-400">
+            nexoraone@nexativanews.com.ar
+          </a>
+        </span>
       </footer>
     </div>
   );
