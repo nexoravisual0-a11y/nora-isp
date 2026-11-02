@@ -545,9 +545,9 @@ export default function CaraleCorporativaUI() {
         </div>
       </RevealSection>
 
-      {/* 5. Tarea 2: Footer Corporativo con Firma Oficial Exacta */}
-      <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-12 px-4 sm:px-6 lg:px-8 text-xs text-slate-400">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+      {/* 5. Tarea 2: Footer Corporativo con Firma Oficial Exacta y Resguardo de Padding */}
+      <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-12 pb-24 md:pb-12 px-4 sm:px-6 lg:px-8 text-xs text-slate-400">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left pr-0 md:pr-48">
           <div className="space-y-1">
             <div className="flex items-center justify-center md:justify-start gap-2">
               <span className="font-extrabold text-white text-sm">CARALE</span>
@@ -561,7 +561,7 @@ export default function CaraleCorporativaUI() {
           </div>
 
           {/* Firma exacta global */}
-          <div className="text-zinc-400 text-center md:text-right text-[11px] leading-relaxed">
+          <div className="text-zinc-400 text-center md:text-left text-[11px] leading-relaxed">
             <div>
               Desarrollado por: <strong className="text-slate-200">Nexora One</strong> | Soporte:{" "}
               <a href="tel:3786414533" className="text-cyan-400 hover:underline font-mono">
@@ -579,23 +579,26 @@ export default function CaraleCorporativaUI() {
         </div>
       </footer>
 
-      {/* 6. El Rol Estrella: Widget Flotante Premium de Caralita */}
+      {/* 6. El Rol Estrella: Widget Flotante Premium de Caralita con Avatar Oficial */}
       <div className="fixed bottom-6 right-6 z-50">
         {!isChatOpen ? (
           <button
             onClick={() => setIsChatOpen(true)}
-            className="group relative flex items-center gap-3 px-5 py-3.5 rounded-full bg-gradient-to-r from-cyan-500 via-teal-500 to-blue-600 text-white font-bold text-xs shadow-2xl shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all duration-300 hover:scale-105 active:scale-95 border border-cyan-300/30"
+            className="group relative flex items-center gap-3 px-4 py-3 rounded-full bg-gradient-to-r from-cyan-500 via-teal-500 to-blue-600 text-white font-bold text-xs shadow-2xl shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all duration-300 hover:scale-105 active:scale-95 border border-cyan-300/30"
           >
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
-            </span>
-            <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-white" />
-              <div className="text-left">
-                <span className="block leading-none">Hablá con Caralita</span>
-                <span className="text-[9px] text-cyan-100 font-normal">Ventas & Soporte IA</span>
-              </div>
+            <div className="relative">
+              <img
+                src="/caralita-avatar.svg"
+                alt="Avatar de Caralita"
+                width={36}
+                height={36}
+                className="w-9 h-9 rounded-full object-cover ring-2 ring-cyan-300/60 shadow-md shadow-cyan-500/30"
+              />
+              <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-slate-950 animate-pulse" />
+            </div>
+            <div className="text-left">
+              <span className="block leading-none">Hablá con Caralita</span>
+              <span className="text-[9px] text-cyan-100 font-normal">Ventas & Soporte IA</span>
             </div>
           </button>
         ) : (
@@ -604,16 +607,21 @@ export default function CaraleCorporativaUI() {
             <div className="h-16 px-4 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30 font-bold">
-                    <Bot className="h-5 w-5" />
-                  </div>
+                  <img
+                    src="/caralita-avatar.svg"
+                    alt="Caralita Avatar Oficial"
+                    width={40}
+                    height={40}
+                    className="w-10 h-10 rounded-full object-cover ring-2 ring-cyan-500/50 shadow-md shadow-cyan-500/20"
+                  />
                   <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-white text-sm">Caralita IA</span>
-                    <span className="text-[9px] font-bold text-cyan-400 bg-cyan-950 px-1.5 py-0.2 rounded border border-cyan-800/60 uppercase">
-                      Oficial
+                    <span className="font-bold text-white text-sm">Caralita</span>
+                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 inline-flex items-center gap-1 font-mono">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      En línea
                     </span>
                   </div>
                   <span className="block text-[10px] text-slate-400">

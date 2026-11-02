@@ -704,11 +704,17 @@ function TecnicoPWATrincheraInner() {
       <div className="fixed bottom-20 right-4 z-40">
         <button
           onClick={() => setIsCopilotOpen(!isCopilotOpen)}
-          className="h-14 w-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/30 flex items-center justify-center border-2 border-cyan-400 active:scale-95 transition"
+          className="h-14 w-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/30 flex items-center justify-center p-1 ring-2 ring-cyan-400 active:scale-95 transition"
           title="Consultar a Caralita"
           aria-label="Consultar a Caralita"
         >
-          <Sparkles className="h-7 w-7 text-white" />
+          <img
+            src="/caralita-avatar.svg"
+            alt="Caralita Avatar"
+            width={44}
+            height={44}
+            className="w-11 h-11 rounded-full object-cover shadow-sm"
+          />
         </button>
       </div>
 
@@ -716,9 +722,16 @@ function TecnicoPWATrincheraInner() {
         <div className="fixed inset-x-0 bottom-0 z-50 bg-slate-900 border-t-2 border-cyan-400 rounded-t-3xl shadow-2xl max-w-2xl mx-auto h-[82vh] flex flex-col animate-in slide-in-from-bottom duration-200">
           {/* Header Copilot */}
           <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center">
-                <Bot className="h-5 w-5" />
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <img
+                  src="/caralita-avatar.svg"
+                  alt="Caralita Avatar Oficial"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-cyan-500/50 shadow-md shadow-cyan-500/20"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
               </div>
               <div>
                 <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
