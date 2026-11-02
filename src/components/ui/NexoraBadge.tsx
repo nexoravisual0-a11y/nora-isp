@@ -85,13 +85,13 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
             </div>
 
             {/* Contenedor Blanco de Alto Contraste con QR Proporcionado */}
-            <div className="p-3 rounded-xl inline-flex items-center justify-center bg-white shadow-inner mx-auto">
+            <div className="bg-white p-3 rounded-xl inline-flex items-center justify-center shadow-inner mx-auto">
               <img
                 src={qrImageUrl}
                 alt="Código QR hacia Nexora One Store"
-                width={144}
-                height={144}
-                className="w-36 h-36 object-contain rounded-lg"
+                width={160}
+                height={160}
+                className="w-40 h-40 object-contain mx-auto"
               />
             </div>
 
