@@ -14,12 +14,12 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/store",
-        destination: "https://tinyurl.com/nexora-one",
+        destination: "https://nexora-one.vercel.app",
         permanent: false,
       },
       {
         source: "/qr",
-        destination: "https://tinyurl.com/nexora-one",
+        destination: "https://nexora-one.vercel.app",
         permanent: false,
       },
     ];

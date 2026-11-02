@@ -23,7 +23,7 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
   }, [isOpen]);
 
   const qrImageUrl =
-    "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=https://tinyurl.com/nexora-one";
+    "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=https://nexora-one.vercel.app";
 
   return (
     <>
@@ -34,7 +34,7 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
           type="button"
           onClick={() => setIsOpen(true)}
           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800/80 hover:bg-slate-700/80 text-cyan-300 hover:text-white border border-cyan-500/30 hover:border-cyan-400 transition font-semibold group cursor-pointer active:scale-95 shadow-sm"
-          title="Ver App Store y ecosistema de Nexora One"
+          title="Ver Nexora One Store y soluciones aplicadas"
         >
           <strong className="text-zinc-200 group-hover:text-cyan-200">Nexora One</strong>
           <span className="text-slate-500">|</span>
@@ -77,14 +77,14 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
               Nexora One Engine
             </h3>
             <p className="text-xs text-slate-300 mt-1.5 mb-4 leading-relaxed font-normal">
-              App Store & Ecosistema de Soluciones Inteligentes para ISPs y Telecomunicaciones.
+              Soluciones SaaS de alto rendimiento, Inteligencia Artificial aplicada y PWAs de trinchera para telecomunicaciones.
             </p>
 
             {/* Contenedor Blanco de Alto Contraste para el QR */}
             <div className="mx-auto w-[240px] h-[240px] bg-white p-3 rounded-2xl shadow-xl border-2 border-cyan-500/40 flex items-center justify-center">
               <img
                 src={qrImageUrl}
-                alt="Código QR hacia Nexora One App Store"
+                alt="Código QR hacia Nexora One Store"
                 width={216}
                 height={216}
                 className="w-full h-full object-contain rounded-lg"
@@ -104,7 +104,7 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
                 className="w-full h-12 min-h-[48px] rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/60 active:scale-95 transition"
               >
                 <Smartphone className="h-4 w-4" />
-                <span>Abrir Nexora One App Store</span>
+                <span>Abrir Nexora One Store</span>
                 <ExternalLink className="h-3.5 w-3.5" />
               </a>
 
@@ -122,3 +122,4 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
     </>
   );
 }
+
