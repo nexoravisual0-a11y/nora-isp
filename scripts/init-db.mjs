@@ -228,6 +228,41 @@ async function main() {
     console.log("La tabla isp_knowledge ya contiene " + countKnowledge[0].count + " articulos tecnicos.");
   }
 
+  // =========================================================================
+  // ARTÍCULOS DE CAPACITACIÓN OPERATIVA Y MANUAL DE USUARIO DEL SISTEMA
+  // =========================================================================
+  console.log("📚 Sembrando manual operativo y guías de capacitación en 'isp_knowledge'...");
+  await sql`
+    INSERT INTO isp_knowledge (category, title, content, keywords)
+    VALUES
+      (
+        'manual_operativo',
+        'Lógica de Shadow DB y Contingencia',
+        'La arquitectura Shadow DB garantiza que ninguna operación de campo o guardia se detenga ante fallos externos:\n1. Persistencia Inmediata Local: Cada ticket, cliente o medición de potencia se guarda primero en la base de datos central de Neon Postgres en < 800ms.\n2. Encolado Seguro (sync_queue): Si la API de ISPCube o el enlace de internet troncal sufren un corte o timeout, la transacción no falla de cara al usuario. El sistema la deposita con estado "pending" en la tabla sync_queue.\n3. Reintento y Autorrecuperación: Un mecanismo background reintenta periódicamente enviar las mutaciones encoladas en cuanto se reestablece la conectividad con ISPCube, evitando pérdidas de datos o inconsistencias contables/técnicas.',
+        ARRAY['shadow db', 'contingencia', 'sync_queue', 'ispcube', 'sincronizacion', 'offline', 'persistencia', 'cola']
+      ),
+      (
+        'manual_operativo',
+        'Uso de PWA de Trinchera para Técnicos',
+        'Guía operativa para cuadrillas en calle con la PWA móvil (/tecnicos):\n1. Semáforo Óptico de Potencia (Rx): Al medir la roseta o drop del cliente, ingresar los dBm en el reporte rápido.\n   - Verde Óptimo (-15.0 a -24.9 dBm): Potencia ideal para navegación simétrica sin fluctuación.\n   - Amarillo Atenuado (-25.0 a -26.9 dBm): Señal degradada, requiere revisión de empalmes o limpieza de conector SC/APC.\n   - Rojo Crítico (<= -27.0 dBm): Alarma de pérdida de sincronismo GPON, corte o microcurvatura severa.\n2. Navegación GPS Rápida: Tocar el botón de navegación en la tarjeta de la orden para abrir automáticamente Google Maps con la ruta hacia las coordenadas exactas del abonado.\n3. Chat Interno de Guardia: Usar el panel inferior de mensajería interna para coordinar con el NOC o despachador en tiempo real sin usar WhatsApp personal ni exponer números privados.',
+        ARRAY['pwa', 'tecnicos', 'semaforo', 'potencia', 'rx_power', 'dbm', 'gps', 'google maps', 'chat interno', 'cuadrillas']
+      ),
+      (
+        'manual_operativo',
+        'Navegación del Panel NOC / ERP',
+        'Guía de lectura e interpretación del tablero principal del NOC (/):\n1. Abonados en Vivo: Muestra clientes activos con sesión PPPoE establecida y telemetría de potencia reportada por la OLT.\n2. Clientes Morosos: Listado de abonados con facturas impagas pasibles de suspensión o promesas de pago.\n3. Nodos en Alerta: Monitorea OLTs y cajas NAP; alerta cuando los puertos ocupados superan el 90% de capacidad o la atenuación promedio excede los límites admisibles.\n4. Radar de Cuadrillas: Mapeo geolocalizado en tiempo real de los móviles de servicio técnico activos en calle.\n5. Consulta y Búsqueda de Tickets: Búsqueda rápida por abonado, número de reclamo o prioridad.',
+        ARRAY['noc', 'dashboard', 'panel', 'abonados', 'morosos', 'nodos', 'olt', 'nap', 'radar', 'tickets']
+      ),
+      (
+        'manual_operativo',
+        'Resolución y Cierre de Tickets',
+        'Protocolo de cambio de estado y cierre de órdenes técnicas:\n1. Ubicación: En la tarjeta de la orden de trabajo (PWA Técnicos o Panel NOC /tickets), seleccionar el botón "Reportar Potencia / Cierre".\n2. Ingreso de Datos Obligatorios: Registrar el valor medido con Power Meter (rx_power en dBm), seleccionar el resultado ("Resuelto" o "Requiere Fusión / Derivación") y redactar notas de campo precisas.\n3. Derivación a Fusión: Si la potencia es <= -27 dBm y la causa es troncal o sangrado de splitter, cambiar estado a "Derivado" e ingresar en notas la NAP y splitter afectados para que tome intervención la cuadrilla de empalme.\n4. Impacto: Al confirmar el cierre, la orden se actualiza en isp_tickets, impacta en clientes/isp_services y se sincroniza automáticamente con el ERP o queda encolada en sync_queue.',
+        ARRAY['cierre', 'resolucion', 'tickets', 'orden de trabajo', 'potencia', 'fusion', 'derivacion', 'reporte']
+      )
+    ON CONFLICT DO NOTHING;
+  `;
+  console.log("✅ Manual operativo sembrado exitosamente en 'isp_knowledge'.");
+
   // Insertar clientes y servicios semilla en Shadow DB si está vacía
   const countShadowCust = await sql`SELECT count(*)::int as count FROM isp_customers;`;
   if (countShadowCust[0].count === 0) {
