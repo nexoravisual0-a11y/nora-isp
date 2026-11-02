@@ -183,6 +183,20 @@ async function main() {
   `;
   console.log("✅ Tabla 'isp_knowledge' verificada.");
 
+  // 7. system_feedback_telemetry
+  await sql`
+    CREATE TABLE IF NOT EXISTS system_feedback_telemetry (
+      id SERIAL PRIMARY KEY,
+      user_role TEXT DEFAULT 'operador',
+      screen_path TEXT,
+      issue_description TEXT NOT NULL,
+      technical_details JSONB DEFAULT '{}'::jsonb,
+      status TEXT DEFAULT 'pending_review',
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+  `;
+  console.log("✅ Tabla 'system_feedback_telemetry' verificada.");
+
   // Índices B-Tree y GIN
   console.log("⚡ Configurando índices B-Tree y GIN...");
   await sql`

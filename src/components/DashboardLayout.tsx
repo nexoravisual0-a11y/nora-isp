@@ -20,6 +20,7 @@ import {
   Wrench,
   ShieldAlert,
   Sparkles,
+  BookOpen,
 } from "lucide-react";
 import NoraCopilot from "@/components/NoraCopilot";
 import NexoraBadge from "@/components/ui/NexoraBadge";
@@ -235,6 +236,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Database className="h-3.5 w-3.5" />
               <span>Core Sincronizado</span>
             </div>
+
+            {/* Botón Guía y Protocolos UAT */}
+            <Link
+              href="/guia"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-800 text-xs font-semibold text-neutral-200 hover:text-cyan-300 shadow-sm transition"
+              title="Guía Operativa Oficial y Protocolos UAT"
+            >
+              <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
+              <span>Guía y Protocolos</span>
+            </Link>
 
             {/* Botón Nora Copilot (Drawer Asistente NOC) */}
             <button

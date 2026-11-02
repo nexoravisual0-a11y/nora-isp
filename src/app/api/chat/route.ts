@@ -156,6 +156,33 @@ const NORA_TOOLS: Groq.Chat.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "reportar_falla_o_feedback",
+      description:
+        "Registra en tiempo real un reporte de incidente, error de interfaz, lentitud o feedback operativo en la base de datos de telemetría (system_feedback_telemetry) cuando un técnico u operador indica en el chat que algo falló, se trabó o no responde.",
+      parameters: {
+        type: "object",
+        properties: {
+          screen_path: {
+            type: "string",
+            description: "Ruta de la pantalla o módulo donde ocurrió la falla (ej. /tecnicos, /tickets, /clientes, /nodos, o /)",
+          },
+          issue_description: {
+            type: "string",
+            description: "Descripción concisa y técnica del problema o fallo reportado por el usuario",
+          },
+          severity: {
+            type: "string",
+            enum: ["baja", "media", "alta"],
+            description: "Nivel de severidad del incidente ('alta' para bloqueos de pantalla o caídas, 'media' para errores visuales o de guardado, 'baja' para sugerencias)",
+          },
+        },
+        required: ["screen_path", "issue_description", "severity"],
+      },
+    },
+  },
 ];
 
 /**
@@ -268,8 +295,8 @@ async function ejecutarBuscarCliente(args: { identificador: string }) {
     pot < -27
       ? "CRÍTICO - Pérdida de potencia / desconexión óptica inminente"
       : pot < -24
-      ? "ADVERTENCIA - Atenuación elevada"
-      : "ÓPTIMO - Señal dentro de norma GPON";
+        ? "ADVERTENCIA - Atenuación elevada"
+        : "ÓPTIMO - Señal dentro de norma GPON";
 
   return {
     encontrado: true,
@@ -363,6 +390,54 @@ async function ejecutarConsultarProcedimiento(args: { termino: string }) {
     return {
       encontrado: false,
       mensaje: `Error al acceder a la Wiki Técnica: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
+/**
+ * Función ejecutora del Tool: Reporte de fallas, bugs o feedback en tiempo real
+ */
+async function ejecutarReportarFallaFeedback(args: {
+  screen_path: string;
+  issue_description: string;
+  severity: "baja" | "media" | "alta";
+}) {
+  try {
+    const screen = (args.screen_path || "/").trim();
+    const description = (args.issue_description || "Sin descripción proporcionada").trim();
+    const severity = args.severity || "media";
+
+    const rows = await sql`
+      INSERT INTO system_feedback_telemetry (
+        user_role,
+        screen_path,
+        issue_description,
+        technical_details,
+        status
+      )
+      VALUES (
+        'operador_copilot',
+        ${screen},
+        ${description},
+        ${JSON.stringify({ severity, reported_via: 'nora_copilot_chat', timestamp: new Date().toISOString() })},
+        'pending_review'
+      )
+      RETURNING id, screen_path, issue_description, status, created_at;
+    `;
+
+    const reportId = rows[0]?.id;
+    return {
+      success: true,
+      report_id: reportId,
+      screen_path: screen,
+      severity,
+      mensaje: `Reporte de telemetría #${reportId} registrado correctamente en la Central Técnica de Carale Internet para revisión de ingeniería.`,
+    };
+  } catch (err) {
+    console.error("[ERROR TOOL reportar_falla_o_feedback]:", err);
+    return {
+      success: false,
+      mensaje: `No se pudo persistir el reporte de falla en la base de datos de telemetría: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 }
@@ -527,8 +602,8 @@ async function buildRealtimeContextAndPayload(
         pot < -27
           ? "CRÍTICO - Pérdida de potencia / desconexión óptica inminente"
           : pot < -24
-          ? "ADVERTENCIA - Atenuación elevada"
-          : "ÓPTIMO - Señal dentro de norma GPON";
+            ? "ADVERTENCIA - Atenuación elevada"
+            : "ÓPTIMO - Señal dentro de norma GPON";
 
       lineasContexto.push("\n[FICHA EN VIVO DEL ABONADO CONSULTADO]");
       lineasContexto.push(`• ID / Nombre: ${clienteData.nombre} (${clienteData.id})`);
@@ -590,8 +665,8 @@ export async function POST(req: NextRequest) {
       source === "portal"
         ? CARALITA_PUBLIC_PROMPT
         : source === "admin-copilot"
-        ? NORA_COPILOT_PROMPT
-        : NORA_SYSTEM_PROMPT;
+          ? NORA_COPILOT_PROMPT
+          : NORA_SYSTEM_PROMPT;
 
     // =========================================================================
     // ESTRATEGIA LOCAL-FIRST: Intentar motor local Ollama primero
@@ -835,6 +910,23 @@ export async function POST(req: NextRequest) {
 
           // Consulta en la tabla isp_knowledge de Neon Postgres
           const resultado = await ejecutarConsultarProcedimiento(toolArgs);
+
+          conversationMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: JSON.stringify(resultado),
+          });
+        } else if (toolCall.function.name === "reportar_falla_o_feedback") {
+          let toolArgs = { screen_path: "/", issue_description: "Reporte de incidencia", severity: "media" as const };
+          try {
+            toolArgs = JSON.parse(toolCall.function.arguments);
+          } catch (e) {
+            console.error("Error parseando argumentos de reportar_falla_o_feedback:", e);
+          }
+
+          // Guardar reporte en system_feedback_telemetry
+          const resultado = await ejecutarReportarFallaFeedback(toolArgs);
 
           conversationMessages.push({
             role: "tool",

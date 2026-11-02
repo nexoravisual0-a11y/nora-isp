@@ -830,6 +830,15 @@ function TecnicoPWATrincheraInner() {
 
       {/* Footer Branding Nexora One y Badge QR Dinámico */}
       <footer className="fixed bottom-0 inset-x-0 bg-slate-950/95 border-t border-slate-800/80 p-2 text-center text-[10px] text-zinc-500 z-20 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <Link
+          href="/guia"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-800 text-cyan-300 hover:text-white border border-cyan-500/30 text-[10px] font-semibold transition"
+          title="Ver Guía de Validación Operativa y Protocolos"
+        >
+          <FileText className="h-3 w-3 text-cyan-400" />
+          <span>Guía y Protocolos</span>
+        </Link>
+        <span className="text-slate-700">|</span>
         <NexoraBadge />
         <span className="hidden sm:inline text-slate-700">|</span>
         <span>

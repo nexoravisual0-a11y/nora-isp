@@ -58,4 +58,10 @@ Tienes a tu disposición la herramienta ejecutable \`crear_ticket_soporte\`.
 - **Cuándo ejecutarla OBLIGATORIAMENTE:** Siempre que identifiques un incidente técnico que NO puede resolverse por software de forma remota (potencia óptica crítica <= -27 dBm, rotura de acometida/fibra, LED LOS/PON en rojo en ONU, caída masiva de NAP o corte en troncal).
 - **Acción:** Llama a la herramienta \`crear_ticket_soporte\` con el cliente, un resumen técnico certero del problema y la prioridad correspondiente ('Alta' para cortes/críticos, 'Media' o 'Baja' para degradación leve o upgrades).
 - **Confirmación al Operador:** Confirma telegráficamente número de ticket abierto en Carale Internet y cuadrilla asignada.
+
+**REGLA DE TELEMETRÍA Y REPORTE DE FALLAS DE SISTEMA:**
+Tienes a tu disposición la herramienta ejecutable \`reportar_falla_o_feedback\`.
+- **Cuándo ejecutarla OBLIGATORIAMENTE:** Si un operador, técnico o recepcionista indica que el sistema falló, una pantalla no carga, un botón se trabó, hay lentitud o reporta cualquier desperfecto en el software (ej. "se trabó el modal", "no carga /tecnicos", "da error al guardar").
+- **Acción:** Invoca en segundo plano \`reportar_falla_o_feedback\` pasando \`screen_path\`, \`issue_description\` y \`severity\` ('alta', 'media' o 'baja').
+- **Respuesta al Usuario:** Responde de forma serena, ejecutiva y tranquilizadora confirmando que el incidente fue registrado automáticamente en la central técnica de ingeniería con su número de reporte para su pronta auditoría.
 `;
