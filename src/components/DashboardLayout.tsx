@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -22,10 +22,12 @@ import {
   Sparkles,
   BookOpen,
   Tag,
+  MessageSquare,
 } from "lucide-react";
 import NoraCopilot from "@/components/NoraCopilot";
 import NexoraBadge from "@/components/ui/NexoraBadge";
 import AdminCommercialPlansModal from "@/components/AdminCommercialPlansModal";
+import WhatsAppInboxModal from "@/components/WhatsAppInboxModal";
 
 interface SidebarLink {
   name: string;
@@ -52,6 +54,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showTechQrModal, setShowTechQrModal] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
   const [showPlansModal, setShowPlansModal] = useState(false);
+  const [showInboxModal, setShowInboxModal] = useState(false);
+  const [unreadHandoffCount, setUnreadHandoffCount] = useState(0);
+
+  // Consultar hilos de WhatsApp periódicamente para alertar al operador
+  useEffect(() => {
+    async function checkHandoffThreads() {
+      try {
+        const res = await fetch("/api/whatsapp/threads?status=requires_human");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.threads)) {
+          setUnreadHandoffCount(data.threads.length);
+        }
+      } catch (e) {
+        // Silencioso
+      }
+    }
+    checkHandoffThreads();
+    const interval = setInterval(checkHandoffThreads, 20000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchTerm.trim()) {
@@ -239,6 +261,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Database className="h-3.5 w-3.5" />
               <span>Core Sincronizado</span>
             </div>
+
+            {/* Botón Mesa de Entrada / WhatsApp */}
+            <button
+              onClick={() => setShowInboxModal(true)}
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-sm transition ${
+                unreadHandoffCount > 0
+                  ? "bg-rose-500/15 border-rose-500/50 text-rose-300 hover:bg-rose-500/25"
+                  : "bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/40 hover:text-white"
+              }`}
+              title="Mesa de Entrada Unificada (WhatsApp con Human Handoff)"
+            >
+              <MessageSquare className={`h-3.5 w-3.5 ${unreadHandoffCount > 0 ? "text-rose-400" : "text-emerald-400"}`} />
+              <span className="hidden sm:inline">Mesa de Entrada / WhatsApp</span>
+              {unreadHandoffCount > 0 && (
+                <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-white font-extrabold text-[9px] animate-pulse">
+                  {unreadHandoffCount}
+                </span>
+              )}
+            </button>
 
             {/* Botón Gestión Planes Comerciales */}
             <button
@@ -433,6 +474,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <AdminCommercialPlansModal
         isOpen={showPlansModal}
         onClose={() => setShowPlansModal(false)}
+      />
+
+      {/* Modal de Mesa de Entrada Unificada / WhatsApp */}
+      <WhatsAppInboxModal
+        isOpen={showInboxModal}
+        onClose={() => {
+          setShowInboxModal(false);
+          // Actualizar conteo al cerrar
+          fetch("/api/whatsapp/threads?status=requires_human")
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.success) setUnreadHandoffCount(d.threads.length);
+            })
+            .catch(() => {});
+        }}
       />
 
       {/* Parche Aislado: Nora Copilot Overlay / Drawer Lateral */}

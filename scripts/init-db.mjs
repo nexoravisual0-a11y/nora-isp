@@ -272,6 +272,118 @@ async function main() {
   `;
   console.log("✅ Índices optimizados verificados.");
 
+  // =========================================================================
+  // BLOQUE: WhatsApp Inbox & Mesa de Entrada Unificada con Human Handoff
+  // =========================================================================
+  console.log("📱 Verificando y creando tablas de WhatsApp Inbox...");
+  await sql`
+    CREATE TABLE IF NOT EXISTS whatsapp_threads (
+      id SERIAL PRIMARY KEY,
+      phone_number VARCHAR(30) UNIQUE NOT NULL,
+      customer_name VARCHAR(120),
+      dni_cuit VARCHAR(20),
+      status VARCHAR(30) DEFAULT 'bot_active',
+      assigned_operator VARCHAR(60),
+      unread_count INT DEFAULT 0,
+      last_message_preview TEXT,
+      last_activity TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+  `;
+  console.log("✅ Tabla 'whatsapp_threads' verificada.");
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS whatsapp_messages (
+      id SERIAL PRIMARY KEY,
+      thread_id INT REFERENCES whatsapp_threads(id) ON DELETE CASCADE,
+      sender_type VARCHAR(20) NOT NULL,
+      content TEXT NOT NULL,
+      media_url TEXT,
+      external_message_id VARCHAR(100),
+      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+  `;
+  console.log("✅ Tabla 'whatsapp_messages' verificada.");
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_wa_threads_status ON whatsapp_threads(status);
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_wa_messages_thread ON whatsapp_messages(thread_id);
+  `;
+  console.log("✅ Índices de WhatsApp Inbox verificados.");
+
+  // Sembrar 2 conversaciones de prueba si está vacía
+  const countThreads = await sql`SELECT count(*)::int as count FROM whatsapp_threads;`;
+  if (countThreads[0].count === 0) {
+    console.log("🌱 Sembrando conversaciones de prueba en WhatsApp Inbox...");
+    
+    // Thread 1: bot_active (Juan Carlos Gómez)
+    const thread1 = await sql`
+      INSERT INTO whatsapp_threads (
+        phone_number, 
+        customer_name, 
+        dni_cuit, 
+        status, 
+        unread_count, 
+        last_message_preview, 
+        last_activity
+      )
+      VALUES (
+        '+5493786414533', 
+        'Juan Carlos Gómez', 
+        '32109845', 
+        'bot_active', 
+        0, 
+        'Tu módem ONU registra -19.4 dBm (potencia óptima). Navegación simétrica normal.',
+        NOW() - INTERVAL '12 minutes'
+      )
+      RETURNING id;
+    `;
+    const t1Id = thread1[0].id;
+
+    await sql`
+      INSERT INTO whatsapp_messages (thread_id, sender_type, content, created_at)
+      VALUES 
+        (${t1Id}, 'customer', 'Hola buenas tardes, quería consultar el estado de mi conexión de fibra.', NOW() - INTERVAL '15 minutes'),
+        (${t1Id}, 'bot', '¡Hola Juan Carlos! 👋 Te asiste Caralita. He auditado tu módem ONU en la Base de Datos Central. Registras -19.4 dBm (potencia óptima) y tu sesión PPPoE está Conectada.', NOW() - INTERVAL '12 minutes');
+    `;
+
+    // Thread 2: requires_human (María Elena Rostagno)
+    const thread2 = await sql`
+      INSERT INTO whatsapp_threads (
+        phone_number, 
+        customer_name, 
+        dni_cuit, 
+        status, 
+        unread_count, 
+        last_message_preview, 
+        last_activity
+      )
+      VALUES (
+        '+5493786419988', 
+        'María Elena Rostagno', 
+        '28456123', 
+        'requires_human', 
+        2, 
+        'Se cayó la rama de un árbol sobre el cable de fibra de la entrada y quedó colgando.',
+        NOW() - INTERVAL '3 minutes'
+      )
+      RETURNING id;
+    `;
+    const t2Id = thread2[0].id;
+
+    await sql`
+      INSERT INTO whatsapp_messages (thread_id, sender_type, content, created_at)
+      VALUES 
+        (${t2Id}, 'customer', 'Hola, sigo sin internet desde el temporal.', NOW() - INTERVAL '10 minutes'),
+        (${t2Id}, 'bot', 'Hola María Elena, detecto una señal crítica de -31.2 dBm en tu ONU. ¿Observas la luz LOS roja parpadeando?', NOW() - INTERVAL '7 minutes'),
+        (${t2Id}, 'customer', 'Sí, exactamente. Y además se cayó la rama de un árbol sobre el cable de fibra de la entrada y quedó colgando. Necesito hablar con una persona de guardia.', NOW() - INTERVAL '3 minutes');
+    `;
+
+    console.log("✅ Conversaciones semilla de WhatsApp creadas exitosamente.");
+  }
+
   // Insertar registros semilla en isp_knowledge
   const countKnowledge = await sql`SELECT count(*)::int as count FROM isp_knowledge;`;
   if (countKnowledge[0].count === 0) {
