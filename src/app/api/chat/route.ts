@@ -23,6 +23,19 @@ Si un operador, recepcionista o técnico tiene dudas sobre cómo usar el sistema
 
 Si la duda es técnica (configuración ONT Bridge, VLANs, splitters o protocolos de señal < -27 dBm), consulta la herramienta 'consultar_procedimiento' para responder con el estándar oficial de Carale.`;
 
+export const CARALITA_TECNICOS_CALLE_PROMPT = `Tu nombre es Caralita. Eres la copiloto de trinchera para los técnicos de calle de Carale Internet.
+El técnico está en un poste o en el domicilio del cliente, bajo el sol y sin tiempo para leer.
+
+REGLAS DE ORO OBLIGATORIAS:
+- PROHIBIDO: Saludos largos, presentaciones de cargo, explicaciones teóricas, disculpas, introducciones o mencionar nombres de bases de datos internas ("isp_knowledge", "tablas", "Shadow DB").
+- CERO MARKDOWN PESADO: No uses asteriscos dobles (**) para negrita excesiva, guiones repetidos ni bloques de código crudos innecesarios. Usa texto natural, limpio y directo.
+- MÁXIMO 2 A 3 LÍNEAS O PASOS NUMERADOS CONCISOS:
+  Ejemplo si pregunta por ZTE bridge:
+  1. Entrá a Network > WAN.
+  2. Creá conexión Bridge en VLAN 100 con puertos LAN 1 y 2 enlazados.
+  3. Desactivá DHCP y guardá.
+- Si detectas una falla en el sistema que el técnico reporta, usa la tool 'reportar_falla_o_feedback' y dile en una sola línea que el reporte fue derivado a la central técnica.`;
+
 export const dynamic = "force-dynamic";
 
 // Configuración de Arquitectura Local-First (Ollama)
@@ -638,6 +651,7 @@ export async function POST(req: NextRequest) {
       messages = [],
       clienteId,
       source = "noc",
+      role,
       model = "qwen/qwen3.8-27b",
       temperature = 0.4,
       image,
@@ -660,13 +674,15 @@ export async function POST(req: NextRequest) {
 
     let activePayload: TechnicalPayload | null = initialPayload;
 
-    // Enrutamiento inteligente de System Prompt: portal público vs admin copilot vs consola técnica NOC
+    // Enrutamiento inteligente de System Prompt: portal público vs admin copilot vs técnicos calle vs consola técnica NOC
     const selectedSystemPrompt =
-      source === "portal"
-        ? CARALITA_PUBLIC_PROMPT
-        : source === "admin-copilot"
-          ? NORA_COPILOT_PROMPT
-          : NORA_SYSTEM_PROMPT;
+      role === "tecnico_calle"
+        ? CARALITA_TECNICOS_CALLE_PROMPT
+        : source === "portal"
+          ? CARALITA_PUBLIC_PROMPT
+          : source === "admin-copilot"
+            ? NORA_COPILOT_PROMPT
+            : NORA_SYSTEM_PROMPT;
 
     // =========================================================================
     // ESTRATEGIA LOCAL-FIRST: Intentar motor local Ollama primero
@@ -946,6 +962,15 @@ export async function POST(req: NextRequest) {
       });
 
       finalContent = secondCompletion.choices[0]?.message?.content || "";
+    }
+
+    // Limpieza de Markdown pesado si el destinatario es técnico de calle
+    if (role === "tecnico_calle" && finalContent) {
+      finalContent = finalContent
+        .replace(/\*\*(.*?)\*\*/g, "$1") // quitar negrita doble
+        .replace(/^#+\s+/gm, "")        // quitar títulos con #
+        .replace(/`{1,3}([^`]+)`{1,3}/g, "$1") // quitar backticks de código
+        .trim();
     }
 
     return NextResponse.json({

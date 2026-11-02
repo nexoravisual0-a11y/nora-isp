@@ -132,7 +132,7 @@ function TecnicoPWATrincheraInner() {
   const [copilotMessages, setCopilotMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
     {
       role: "assistant",
-      content: `¡Hola ${tecnicoId}! Soy Caralita Copilot. Tengo acceso a la Wiki Técnica (isp_knowledge). Puedes consultarme configuraciones ONT (Bridge VLAN 100), protocolos de atenuación (< -27 dBm) o políticas de reconexión.`,
+      content: `Hola ${tecnicoId}. ¿En qué te ayudo en esta orden?`,
     },
   ]);
   const [copilotInput, setCopilotInput] = useState("");
@@ -737,7 +737,7 @@ function TecnicoPWATrincheraInner() {
                 onClick={() => setCopilotMessages([
                   {
                     role: "assistant",
-                    content: "¡Hola! Soy Caralita, asistente operativa de Carale Internet. ¿En qué procedimiento o diagnóstico de campo puedo ayudarte hoy?",
+                    content: `Hola ${tecnicoId}. ¿En qué te ayudo en esta orden?`,
                   },
                 ])}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 transition"
@@ -785,20 +785,23 @@ function TecnicoPWATrincheraInner() {
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed whitespace-pre-wrap ${
+                  className={`max-w-[88%] rounded-2xl p-3 text-xs leading-relaxed whitespace-pre-wrap font-sans ${
                     m.role === "user"
-                      ? "bg-cyan-600 text-white rounded-tr-none font-medium"
-                      : "bg-slate-800/90 text-slate-200 rounded-tl-none border border-slate-700/80 font-mono text-[11px]"
+                      ? "bg-cyan-600 text-white rounded-tr-none font-medium shadow-sm"
+                      : "bg-slate-800/95 text-slate-100 rounded-tl-none border border-slate-700/80 font-normal shadow-sm"
                   }`}
                 >
-                  {m.content}
+                  {m.content
+                    .replace(/\*\*(.*?)\*\*/g, "$1")
+                    .replace(/^#+\s+/gm, "")
+                    .replace(/`{1,3}([^`]+)`{1,3}/g, "$1")}
                 </div>
               </div>
             ))}
             {isCopilotLoading && (
-              <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono p-2">
+              <div className="flex items-center gap-2 text-cyan-400 text-xs font-sans p-2">
                 <RefreshCw className="h-4 w-4 animate-spin" />
-                <span>Consultando Wiki Técnica (isp_knowledge)...</span>
+                <span>Buscando procedimiento...</span>
               </div>
             )}
             <div ref={copilotEndRef} />
