@@ -25,9 +25,69 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-/**
- * Hook para detección de scroll y animación fluida con IntersectionObserver
- */
+interface CommercialPlanData {
+  id: number;
+  category: string;
+  title: string;
+  badge: string | null;
+  description: string;
+  features: string[];
+  cta_text: string;
+  cta_action: string;
+  display_order: number;
+  is_active: boolean;
+}
+
+const DEFAULT_PLANS: CommercialPlanData[] = [
+  {
+    id: 1,
+    category: "residencial",
+    title: "Internet Fibra Residencial",
+    badge: null,
+    description: "Velocidades simétricas para gaming competitivo, streaming 4K y teletrabajo sin microcortes por atenuación.",
+    features: [
+      "Planes de 100, 300, 600 Mbps y 1 Gbps",
+      "Módem ONU Dual Band WiFi 6 Gigabit",
+      "Autogestión y soporte instantáneo vía Caralita",
+    ],
+    cta_text: "Consultar Cobertura Barrial",
+    cta_action: "cobertura",
+    display_order: 1,
+    is_active: true,
+  },
+  {
+    id: 2,
+    category: "b2b",
+    title: "Enlaces Dedicados B2B",
+    badge: "Misión Crítica",
+    description: "Canales 1:1 no compartidos para corporaciones, industrias y entidades financieras con disponibilidad auditada.",
+    features: [
+      "SLA Garantizado del 99.8% por contrato",
+      "Pool de IPs Públicas Fijas y BGP Multi-homing",
+      "Ejecutivo de cuentas técnico y guardia NOC prioritaria",
+    ],
+    cta_text: "Solicitar Propuesta Corporativa",
+    cta_action: "corporativo",
+    display_order: 2,
+    is_active: true,
+  },
+  {
+    id: 3,
+    category: "mayorista",
+    title: "Transporte & Mayorista",
+    badge: null,
+    description: "Interconexión de fibra oscura, lambdas protegidas y capacidad de tránsito IP para operadores de red y cooperativas.",
+    features: [
+      "Puertos 10G y 100G en anillo metropolitano",
+      "Interconexión directa en CABASE / IXP Buenos Aires",
+      "Rutas redundantes de fibra y bypass DWDM",
+    ],
+    cta_text: "Contactar Ingeniería Carrier",
+    cta_action: "carrier",
+    display_order: 3,
+    is_active: true,
+  },
+];
 function useScrollReveal<T extends HTMLElement = HTMLDivElement>() {
   const ref = useRef<T>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -94,6 +154,27 @@ interface ChatMessage {
 }
 
 export default function CaraleCorporativaUI() {
+  // Estado de los Planes Comerciales (Consumo dinámico)
+  const [plans, setPlans] = useState<CommercialPlanData[]>(DEFAULT_PLANS);
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
+
+  useEffect(() => {
+    async function loadPlans() {
+      try {
+        const res = await fetch("/api/commercial-plans");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.plans) && data.plans.length > 0) {
+          setPlans(data.plans.filter((p: CommercialPlanData) => p.is_active));
+        }
+      } catch (e) {
+        // Fallback transparente a DEFAULT_PLANS
+      } finally {
+        setIsLoadingPlans(false);
+      }
+    }
+    loadPlans();
+  }, []);
+
   // Estado del Widget Flotante de Caralita
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
@@ -380,125 +461,88 @@ export default function CaraleCorporativaUI() {
           </RevealSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* FTTH Residencial */}
-            <RevealSection delay={100} className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 group">
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-blue-500/20 text-cyan-400 flex items-center justify-center border border-cyan-500/30 group-hover:scale-110 transition-transform">
-                  <Wifi className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-bold text-white">Internet Fibra Residencial</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Velocidades simétricas para gaming competitivo, streaming 4K y teletrabajo sin
-                  microcortes por atenuación.
-                </p>
-                <ul className="space-y-2.5 pt-4 text-xs text-slate-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>Planes de 100, 300, 600 Mbps y 1 Gbps</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>Módem ONU Dual Band WiFi 6 Gigabit</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <span>Autogestión y soporte instantáneo vía Caralita</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-8">
-                <button
-                  onClick={() => {
-                    setIsChatOpen(true);
-                    setInputMessage("Quiero consultar cobertura residencial y planes disponibles para mi casa.");
-                  }}
-                  className="w-full py-3 rounded-xl bg-slate-800 hover:bg-cyan-500 hover:text-white text-xs font-bold text-slate-200 transition shadow-sm"
-                >
-                  Consultar Cobertura Barrial
-                </button>
-              </div>
-            </RevealSection>
+            {plans.map((p, idx) => {
+              const isB2B = p.category === "b2b";
+              const isMayorista = p.category === "mayorista";
 
-            {/* Enlaces Dedicados B2B */}
-            <RevealSection delay={200} className="relative rounded-3xl border-2 border-cyan-500/60 bg-gradient-to-b from-slate-900 to-slate-950 p-8 flex flex-col justify-between shadow-2xl shadow-cyan-500/20 group">
-              <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow-md tracking-wider">
-                Misión Crítica
-              </div>
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-2xl bg-cyan-500/20 text-cyan-300 flex items-center justify-center border border-cyan-500/40 group-hover:scale-110 transition-transform">
-                  <Building2 className="h-6 w-6" />
-                </div>
-                <h3 id="empresas" className="text-xl font-bold text-white">Enlaces Dedicados B2B</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Canales 1:1 no compartidos para corporaciones, industrias y entidades financieras
-                  con disponibilidad auditada.
-                </p>
-                <ul className="space-y-2.5 pt-4 text-xs text-slate-200">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-cyan-400 shrink-0" />
-                    <span>SLA Garantizado del 99.8% por contrato</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-cyan-400 shrink-0" />
-                    <span>Pool de IPs Públicas Fijas y BGP Multi-homing</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-cyan-400 shrink-0" />
-                    <span>Ejecutivo de cuentas técnico y guardia NOC prioritaria</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-8">
-                <button
-                  onClick={() => {
-                    setIsChatOpen(true);
-                    setInputMessage("Hola Caralita, solicito una cotización de Enlace Dedicado 1:1 con SLA 99.8% para mi empresa.");
-                  }}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-bold text-white shadow-lg shadow-cyan-500/25 transition"
+              return (
+                <RevealSection
+                  key={p.id}
+                  delay={(idx + 1) * 100}
+                  className={`relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-300 group ${
+                    isB2B
+                      ? "border-2 border-cyan-500/60 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl shadow-cyan-500/20"
+                      : "border border-slate-800 bg-slate-900/80 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10"
+                  }`}
                 >
-                  Solicitar Propuesta Corporativa
-                </button>
-              </div>
-            </RevealSection>
+                  {p.badge && (
+                    <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow-md tracking-wider">
+                      {p.badge}
+                    </div>
+                  )}
 
-            {/* Transporte Mayorista */}
-            <RevealSection delay={300} className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 flex flex-col justify-between hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 transition-all duration-300 group">
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-blue-500/20 to-indigo-500/20 text-blue-400 flex items-center justify-center border border-blue-500/30 group-hover:scale-110 transition-transform">
-                  <Network className="h-6 w-6" />
-                </div>
-                <h3 id="mayorista" className="text-xl font-bold text-white">Transporte & Mayorista</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Interconexión de fibra oscura, lambdas protegidas y capacidad de tránsito IP
-                  para operadores de red y cooperativas.
-                </p>
-                <ul className="space-y-2.5 pt-4 text-xs text-slate-300">
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
-                    <span>Puertos 10G y 100G en anillo metropolitano</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
-                    <span>Interconexión directa en CABASE / IXP Buenos Aires</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-blue-400 shrink-0" />
-                    <span>Rutas redundantes de fibra y bypass DWDM</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="pt-8">
-                <button
-                  onClick={() => {
-                    setIsChatOpen(true);
-                    setInputMessage("Quiero consultar por capacidad mayorista y transporte de datos punto a punto.");
-                  }}
-                  className="w-full py-3 rounded-xl bg-slate-800 hover:bg-blue-600 hover:text-white text-xs font-bold text-slate-200 transition shadow-sm"
-                >
-                  Contactar Ingeniería Carrier
-                </button>
-              </div>
-            </RevealSection>
+                  <div className="space-y-4">
+                    <div
+                      className={`h-12 w-12 rounded-2xl flex items-center justify-center border group-hover:scale-110 transition-transform ${
+                        isB2B
+                          ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                          : isMayorista
+                            ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                            : "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+                      }`}
+                    >
+                      {isB2B ? (
+                        <Building2 className="h-6 w-6" />
+                      ) : isMayorista ? (
+                        <Network className="h-6 w-6" />
+                      ) : (
+                        <Wifi className="h-6 w-6" />
+                      )}
+                    </div>
+
+                    <h3 className="text-xl font-bold text-white">{p.title}</h3>
+                    <p className="text-xs text-slate-400 leading-relaxed">{p.description}</p>
+
+                    <ul className="space-y-2.5 pt-4 text-xs text-slate-300">
+                      {(Array.isArray(p.features) ? p.features : []).map((feat, fIdx) => (
+                        <li key={fIdx} className="flex items-center gap-2">
+                          <CheckCircle2
+                            className={`h-4 w-4 shrink-0 ${
+                              isB2B ? "text-cyan-400" : isMayorista ? "text-blue-400" : "text-emerald-400"
+                            }`}
+                          />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="pt-8">
+                    <button
+                      onClick={() => {
+                        setIsChatOpen(true);
+                        if (p.cta_action === "cobertura") {
+                          setInputMessage(`Hola Caralita, quiero consultar cobertura y planes para: ${p.title}`);
+                        } else if (p.cta_action === "corporativo") {
+                          setInputMessage(`Hola Caralita, solicito una propuesta corporativa de: ${p.title}`);
+                        } else if (p.cta_action === "carrier") {
+                          setInputMessage(`Hola Caralita, quiero consultar con ingeniería sobre: ${p.title}`);
+                        } else {
+                          setInputMessage(`Hola Caralita, quiero información sobre el plan ${p.title}`);
+                        }
+                      }}
+                      className={`w-full py-3 rounded-xl text-xs font-bold transition shadow-sm ${
+                        isB2B
+                          ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25"
+                          : "bg-slate-800 hover:bg-cyan-500 hover:text-white text-slate-200"
+                      }`}
+                    >
+                      {p.cta_text}
+                    </button>
+                  </div>
+                </RevealSection>
+              );
+            })}
           </div>
         </div>
       </section>

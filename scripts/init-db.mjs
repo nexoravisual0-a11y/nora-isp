@@ -197,6 +197,68 @@ async function main() {
   `;
   console.log("✅ Tabla 'system_feedback_telemetry' verificada.");
 
+  // 8. isp_commercial_plans
+  await sql`
+    CREATE TABLE IF NOT EXISTS isp_commercial_plans (
+      id SERIAL PRIMARY KEY,
+      category TEXT NOT NULL,
+      title TEXT NOT NULL,
+      badge TEXT,
+      description TEXT NOT NULL,
+      features JSONB NOT NULL DEFAULT '[]'::jsonb,
+      cta_text TEXT NOT NULL,
+      cta_action TEXT NOT NULL DEFAULT 'contacto',
+      display_order INT DEFAULT 1,
+      is_active BOOLEAN DEFAULT true,
+      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+  `;
+  console.log("✅ Tabla 'isp_commercial_plans' verificada.");
+
+  // Si está vacía, sembramos los 3 planes por defecto
+  const countPlans = await sql`SELECT count(*)::int as count FROM isp_commercial_plans;`;
+  if (countPlans[0].count === 0) {
+    console.log("🌱 Sembrando planes comerciales semilla en 'isp_commercial_plans'...");
+    await sql`
+      INSERT INTO isp_commercial_plans (category, title, badge, description, features, cta_text, cta_action, display_order, is_active)
+      VALUES
+        (
+          'residencial',
+          'Internet Fibra Residencial',
+          NULL,
+          'Velocidades simétricas para gaming competitivo, streaming 4K y teletrabajo sin microcortes por atenuación.',
+          '["Planes de 100, 300, 600 Mbps y 1 Gbps", "Módem ONU Dual Band WiFi 6 Gigabit", "Autogestión y soporte instantáneo vía Caralita"]'::jsonb,
+          'Consultar Cobertura Barrial',
+          'cobertura',
+          1,
+          true
+        ),
+        (
+          'b2b',
+          'Enlaces Dedicados B2B',
+          'Misión Crítica',
+          'Canales 1:1 no compartidos para corporaciones, industrias y entidades financieras con disponibilidad auditada.',
+          '["SLA Garantizado del 99.8% por contrato", "Pool de IPs Públicas Fijas y BGP Multi-homing", "Ejecutivo de cuentas técnico y guardia NOC prioritaria"]'::jsonb,
+          'Solicitar Propuesta Corporativa',
+          'corporativo',
+          2,
+          true
+        ),
+        (
+          'mayorista',
+          'Transporte & Mayorista',
+          NULL,
+          'Interconexión de fibra oscura, lambdas protegidas y capacidad de tránsito IP para operadores de red y cooperativas.',
+          '["Puertos 10G y 100G en anillo metropolitano", "Interconexión directa en CABASE / IXP Buenos Aires", "Rutas redundantes de fibra y bypass DWDM"]'::jsonb,
+          'Contactar Ingeniería Carrier',
+          'carrier',
+          3,
+          true
+        );
+    `;
+    console.log("✅ Planes comerciales iniciales sembrados con éxito.");
+  }
+
   // Índices B-Tree y GIN
   console.log("⚡ Configurando índices B-Tree y GIN...");
   await sql`

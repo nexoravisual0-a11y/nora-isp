@@ -21,9 +21,11 @@ import {
   ShieldAlert,
   Sparkles,
   BookOpen,
+  Tag,
 } from "lucide-react";
 import NoraCopilot from "@/components/NoraCopilot";
 import NexoraBadge from "@/components/ui/NexoraBadge";
+import AdminCommercialPlansModal from "@/components/AdminCommercialPlansModal";
 
 interface SidebarLink {
   name: string;
@@ -49,6 +51,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [showQrModal, setShowQrModal] = useState(false);
   const [showTechQrModal, setShowTechQrModal] = useState(false);
   const [showCopilot, setShowCopilot] = useState(false);
+  const [showPlansModal, setShowPlansModal] = useState(false);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && searchTerm.trim()) {
@@ -237,6 +240,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span>Core Sincronizado</span>
             </div>
 
+            {/* Botón Gestión Planes Comerciales */}
+            <button
+              onClick={() => setShowPlansModal(true)}
+              className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/40 hover:bg-cyan-900/40 text-xs font-semibold text-cyan-300 hover:text-white shadow-sm transition"
+              title="Administrar Planes Comerciales de /portal"
+            >
+              <Tag className="h-3.5 w-3.5 text-cyan-400" />
+              <span>Planes Comerciales</span>
+            </button>
+
             {/* Botón Guía y Protocolos UAT */}
             <Link
               href="/guia"
@@ -415,6 +428,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       )}
+
+      {/* Modal de Gestión de Planes Comerciales */}
+      <AdminCommercialPlansModal
+        isOpen={showPlansModal}
+        onClose={() => setShowPlansModal(false)}
+      />
 
       {/* Parche Aislado: Nora Copilot Overlay / Drawer Lateral */}
       <NoraCopilot isOpen={showCopilot} onClose={() => setShowCopilot(false)} />
