@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 import { groq } from "@/lib/groq";
 import { sql } from "@/lib/db";
+import { searchWebTechnical } from "@/lib/web-search";
 import { NORA_SYSTEM_PROMPT } from "@/lib/nora-prompt";
 import { CARALITA_PUBLIC_PROMPT } from "@/lib/caralita-public-prompt";
 
@@ -193,6 +194,24 @@ const NORA_TOOLS: Groq.Chat.ChatCompletionTool[] = [
           },
         },
         required: ["screen_path", "issue_description", "severity"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "buscar_manual_o_solucion_web",
+      description:
+        "Utiliza esta herramienta cuando el usuario pregunte por manuales, IPs por defecto, contraseñas de fábrica, configuraciones ONT/Router (ej. ZTE, Huawei, FiberHome, TP-Link, MikroTik, Ubiquiti) o procedimientos técnicos específicos que NO se encuentren detallados en la base local isp_knowledge.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: {
+            type: "string",
+            description: "Búsqueda técnica precisa en la web (ej. 'ZTE F670L default IP password admin', 'Huawei EG8145V5 bridge mode VLAN tag')",
+          },
+        },
+        required: ["query"],
       },
     },
   },
@@ -451,6 +470,66 @@ async function ejecutarReportarFallaFeedback(args: {
     return {
       success: false,
       mensaje: `No se pudo persistir el reporte de falla en la base de datos de telemetría: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
+}
+
+/**
+ * Función ejecutora del Tool: Búsqueda Web Técnica Autónoma (Fallback para equipos no documentados)
+ */
+async function ejecutarBuscarWebTechnical(args: { query: string }) {
+  const query = (args.query || "").trim();
+  if (!query) {
+    return {
+      encontrado: false,
+      mensaje: "No se proporcionó consulta para búsqueda web técnica.",
+    };
+  }
+
+  try {
+    const rawResults = await searchWebTechnical(query);
+
+    if (!rawResults || rawResults.trim().length === 0) {
+      return {
+        encontrado: false,
+        query,
+        mensaje: `No se hallaron resultados concluyentes en la búsqueda web para "${query}". Procede verificando la etiqueta física del equipo o contacta a soporte de fábrica.`,
+      };
+    }
+
+    // Registrar telemetría silenciosa del hallazgo asistido por web
+    try {
+      await sql`
+        INSERT INTO system_feedback_telemetry (
+          user_role,
+          screen_path,
+          issue_description,
+          technical_details,
+          status
+        )
+        VALUES (
+          'copilot_web',
+          '/copilot',
+          ${'Auto-Knowledge: ' + query},
+          ${JSON.stringify({ query, preview: rawResults.slice(0, 300), timestamp: new Date().toISOString() })},
+          'web_assisted'
+        );
+      `;
+    } catch (telemetryErr) {
+      console.warn("[TELEMETRIA_WEB_FALLO_SILENCIOSO]:", telemetryErr);
+    }
+
+    return {
+      encontrado: true,
+      query,
+      resultados: rawResults,
+      mensaje: `Información técnica obtenida de fuentes web para "${query}":\n${rawResults}`,
+    };
+  } catch (err) {
+    console.error("[ERROR TOOL buscar_manual_o_solucion_web]:", err);
+    return {
+      encontrado: false,
+      mensaje: `Error al ejecutar búsqueda técnica externa: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 }
@@ -943,6 +1022,23 @@ export async function POST(req: NextRequest) {
 
           // Guardar reporte en system_feedback_telemetry
           const resultado = await ejecutarReportarFallaFeedback(toolArgs);
+
+          conversationMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: JSON.stringify(resultado),
+          });
+        } else if (toolCall.function.name === "buscar_manual_o_solucion_web") {
+          let toolArgs = { query: "" };
+          try {
+            toolArgs = JSON.parse(toolCall.function.arguments);
+          } catch (e) {
+            console.error("Error parseando argumentos de buscar_manual_o_solucion_web:", e);
+          }
+
+          // Búsqueda técnica web liviana en segundo plano
+          const resultado = await ejecutarBuscarWebTechnical(toolArgs);
 
           conversationMessages.push({
             role: "tool",
