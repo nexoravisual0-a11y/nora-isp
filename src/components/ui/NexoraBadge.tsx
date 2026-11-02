@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { QrCode, X, ExternalLink, Sparkles, Smartphone, ShieldCheck } from "lucide-react";
+import { QrCode, X, ExternalLink, Sparkles, Smartphone } from "lucide-react";
 
 interface NexoraBadgeProps {
   variant?: "sidebar" | "footer" | "inline";
@@ -51,57 +51,61 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
           role="dialog"
           aria-modal="true"
           aria-labelledby="nexora-badge-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in duration-150"
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150"
         >
-          {/* Backdrop click */}
-          <div className="absolute inset-0" onClick={() => setIsOpen(false)} />
-
-          <div className="relative w-full max-w-sm rounded-3xl border-2 border-cyan-500/70 bg-slate-900/95 shadow-2xl backdrop-blur-2xl p-6 text-slate-100 text-center z-10">
-            {/* Botón Cerrar */}
+          {/* Tarjeta interna centrada */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-neutral-900 border border-cyan-500/30 rounded-2xl max-w-sm w-full mx-auto p-5 text-center space-y-4 shadow-2xl text-slate-100"
+          >
+            {/* Botón Cerrar discreto */}
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 active:scale-95 transition"
+              className="absolute top-3 right-3 text-neutral-400 hover:text-white p-1 rounded-lg transition"
               aria-label="Cerrar ventana modal"
             >
               <X className="h-5 w-5" />
             </button>
 
             {/* Icono Badge */}
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500/20 via-teal-500/20 to-blue-600/20 text-cyan-400 border border-cyan-500/40 mb-3.5 shadow-inner">
-              <Sparkles className="h-6 w-6 text-cyan-400" />
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-inner">
+              <Sparkles className="h-5 w-5 text-cyan-400" />
             </div>
 
             {/* Título y Descripción */}
-            <h3 id="nexora-badge-title" className="text-base font-black text-white tracking-tight">
-              Nexora One Engine
-            </h3>
-            <p className="text-xs text-slate-300 mt-1.5 mb-4 leading-relaxed font-normal">
-              Soluciones SaaS de alto rendimiento, Inteligencia Artificial aplicada y PWAs de trinchera para telecomunicaciones.
-            </p>
+            <div>
+              <h3 id="nexora-badge-title" className="text-base font-bold text-white tracking-tight">
+                Nexora One Engine
+              </h3>
+              <p className="text-xs text-neutral-400 mt-1 leading-relaxed font-normal">
+                Soluciones SaaS de alto rendimiento, Inteligencia Artificial aplicada y PWAs de trinchera para telecomunicaciones.
+              </p>
+            </div>
 
-            {/* Contenedor Blanco de Alto Contraste para el QR */}
-            <div className="mx-auto w-[240px] h-[240px] bg-white p-3 rounded-2xl shadow-xl border-2 border-cyan-500/40 flex items-center justify-center">
+            {/* Contenedor Blanco de Alto Contraste con QR Proporcionado */}
+            <div className="p-3 rounded-xl inline-flex items-center justify-center bg-white shadow-inner mx-auto">
               <img
                 src={qrImageUrl}
                 alt="Código QR hacia Nexora One Store"
-                width={216}
-                height={216}
-                className="w-full h-full object-contain rounded-lg"
+                width={144}
+                height={144}
+                className="w-36 h-36 object-contain rounded-lg"
               />
             </div>
 
-            <span className="block text-[11px] font-mono text-cyan-400 font-semibold mt-3">
+            <span className="block text-[11px] font-mono text-cyan-400 font-semibold">
               Escanea con tu cámara o abre el enlace
             </span>
 
-            {/* Botón de Acción Directo y Cierre */}
-            <div className="mt-4 pt-3.5 border-t border-slate-800/80 space-y-2.5">
+            {/* Botón de Acción Ancho Completo */}
+            <div className="pt-2 border-t border-neutral-800 space-y-2">
               <a
                 href="/store"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full h-12 min-h-[48px] rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-cyan-950/60 active:scale-95 transition"
+                className="w-full py-2.5 px-4 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold rounded-xl text-xs tracking-wide transition-all shadow-lg shadow-cyan-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 <Smartphone className="h-4 w-4" />
                 <span>Abrir Nexora One Store</span>
@@ -111,7 +115,7 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="w-full h-10 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold active:scale-95 transition"
+                className="w-full py-2 rounded-xl bg-neutral-800/80 hover:bg-neutral-800 text-neutral-300 text-xs font-medium active:scale-95 transition"
               >
                 Cerrar
               </button>
@@ -122,4 +126,3 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
     </>
   );
 }
-
