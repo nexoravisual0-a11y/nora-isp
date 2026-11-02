@@ -32,6 +32,7 @@ import {
   ChevronDown,
   Wrench,
   Check,
+  RotateCcw,
 } from "lucide-react";
 import {
   getOrdenesTrabajo,
@@ -290,6 +291,8 @@ function TecnicoPWATrincheraInner() {
         body: JSON.stringify({
           messages: nuevosMensajes,
           source: "noc",
+          role: "tecnico_calle",
+          screen: "/tecnicos",
           image: compressedPhotoUrl || undefined,
         }),
       });
@@ -698,18 +701,19 @@ function TecnicoPWATrincheraInner() {
       )}
 
       {/* 5. Botón Flotante y Modal de Caralita Copilot (RAG Wiki) */}
-      <div className="fixed bottom-4 right-4 z-40">
+      <div className="fixed bottom-20 right-4 z-40">
         <button
           onClick={() => setIsCopilotOpen(!isCopilotOpen)}
-          className="h-14 w-14 rounded-full bg-gradient-to-tr from-cyan-500 via-teal-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-2xl shadow-cyan-500/50 flex items-center justify-center border-2 border-cyan-400 active:scale-95 transition"
-          title="Consultar Wiki y Procedimientos con Caralita"
+          className="h-14 w-14 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/30 flex items-center justify-center border-2 border-cyan-400 active:scale-95 transition"
+          title="Consultar a Caralita"
+          aria-label="Consultar a Caralita"
         >
-          <Sparkles className="h-7 w-7 animate-spin-slow" />
+          <Sparkles className="h-7 w-7 text-white" />
         </button>
       </div>
 
       {isCopilotOpen && (
-        <div className="fixed inset-x-0 bottom-0 z-50 bg-slate-900 border-t-2 border-cyan-400 rounded-t-3xl shadow-2xl max-w-2xl mx-auto h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-200">
+        <div className="fixed inset-x-0 bottom-0 z-50 bg-slate-900 border-t-2 border-cyan-400 rounded-t-3xl shadow-2xl max-w-2xl mx-auto h-[82vh] flex flex-col animate-in slide-in-from-bottom duration-200">
           {/* Header Copilot */}
           <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
             <div className="flex items-center gap-2">
@@ -718,28 +722,53 @@ function TecnicoPWATrincheraInner() {
               </div>
               <div>
                 <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
-                  Caralita Copilot <span className="text-[10px] text-cyan-400 font-mono">RAG WIKI</span>
+                  Caralita Copilot - Cuadrillas
+                  <span className="inline-flex items-center gap-1 text-[9px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    En línea
+                  </span>
                 </h3>
-                <span className="text-[10px] text-slate-400">Consultas técnicas de campo</span>
+                <span className="text-[10px] text-slate-400">Asistencia técnica y protocolos en calle</span>
               </div>
             </div>
-            <button onClick={() => setIsCopilotOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white">
-              <X className="h-5 w-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCopilotMessages([
+                  {
+                    role: "assistant",
+                    content: "¡Hola! Soy Caralita, asistente operativa de Carale Internet. ¿En qué procedimiento o diagnóstico de campo puedo ayudarte hoy?",
+                  },
+                ])}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 transition"
+                title="Reiniciar conversación"
+                aria-label="Reiniciar chat"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCopilotOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white transition"
+                aria-label="Cerrar chat"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
-          {/* Atajos Rápidos a la Wiki */}
-          <div className="p-2 bg-slate-950 border-b border-slate-800 flex gap-2 overflow-x-auto text-xs no-scrollbar">
+          {/* Atajos Rápidos a la Wiki / Chips Táctiles */}
+          <div className="p-2.5 bg-slate-950 border-b border-slate-800 flex gap-2 overflow-x-auto text-xs no-scrollbar">
             {[
-              "ONT Bridge VLAN 100",
-              "Protocolo < -27 dBm",
-              "Promesa de Pago",
-              "Limpieza SC/APC",
+              "¿Cómo configurar ZTE F670L en bridge?",
+              "Parámetros de potencia SC/APC aceptables",
+              "Procedimiento de sangrado de fibra troncal",
+              "Reportar problema o falla técnica",
             ].map((kw) => (
               <button
                 key={kw}
-                onClick={() => handleSendCopilot(`Procedimiento para: ${kw}`)}
-                className="whitespace-nowrap px-3 py-1 rounded-lg bg-slate-800 text-cyan-300 font-semibold border border-slate-700 active:scale-95 text-[11px]"
+                onClick={() => handleSendCopilot(kw)}
+                className="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-cyan-300 hover:text-white font-semibold border border-cyan-500/25 active:scale-95 text-[11px] transition shadow-sm"
               >
                 {kw}
               </button>
