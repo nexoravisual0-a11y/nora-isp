@@ -709,11 +709,11 @@ function TecnicoPWATrincheraInner() {
           aria-label="Consultar a Caralita"
         >
           <img
-            src="/caralita-avatar.svg"
+            src="/caralita-avatar.jpg"
             alt="Caralita Avatar"
             width={44}
             height={44}
-            className="w-11 h-11 rounded-full object-cover shadow-sm"
+            className="w-11 h-11 rounded-full object-cover object-top ring-2 ring-cyan-400 shadow-md shadow-cyan-500/30"
           />
         </button>
       </div>
@@ -725,11 +725,11 @@ function TecnicoPWATrincheraInner() {
             <div className="flex items-center gap-2.5">
               <div className="relative">
                 <img
-                  src="/caralita-avatar.svg"
+                  src="/caralita-avatar.jpg"
                   alt="Caralita Avatar Oficial"
                   width={40}
                   height={40}
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-cyan-500/50 shadow-md shadow-cyan-500/20"
+                  className="w-10 h-10 rounded-full object-cover object-top ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/30"
                 />
                 <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
               </div>

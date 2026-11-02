@@ -131,8 +131,8 @@ function RevealSection({
       id={id}
       style={{ transitionDelay: `${delay}ms` }}
       className={`transition-all duration-700 ease-out transform ${isVisible
-          ? "opacity-100 translate-y-0"
-          : "opacity-0 translate-y-8 pointer-events-none"
+        ? "opacity-100 translate-y-0"
+        : "opacity-0 translate-y-8 pointer-events-none"
         } ${className}`}
     >
       {children}
@@ -469,11 +469,10 @@ export default function CaraleCorporativaUI() {
                 <RevealSection
                   key={p.id}
                   delay={(idx + 1) * 100}
-                  className={`relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-300 group ${
-                    isB2B
+                  className={`relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-300 group ${isB2B
                       ? "border-2 border-cyan-500/60 bg-gradient-to-b from-slate-900 to-slate-950 shadow-2xl shadow-cyan-500/20"
                       : "border border-slate-800 bg-slate-900/80 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/10"
-                  }`}
+                    }`}
                 >
                   {p.badge && (
                     <div className="absolute -top-3.5 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-extrabold uppercase px-3 py-1 rounded-full shadow-md tracking-wider">
@@ -483,13 +482,12 @@ export default function CaraleCorporativaUI() {
 
                   <div className="space-y-4">
                     <div
-                      className={`h-12 w-12 rounded-2xl flex items-center justify-center border group-hover:scale-110 transition-transform ${
-                        isB2B
+                      className={`h-12 w-12 rounded-2xl flex items-center justify-center border group-hover:scale-110 transition-transform ${isB2B
                           ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
                           : isMayorista
                             ? "bg-blue-500/20 text-blue-400 border-blue-500/30"
                             : "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-                      }`}
+                        }`}
                     >
                       {isB2B ? (
                         <Building2 className="h-6 w-6" />
@@ -507,9 +505,8 @@ export default function CaraleCorporativaUI() {
                       {(Array.isArray(p.features) ? p.features : []).map((feat, fIdx) => (
                         <li key={fIdx} className="flex items-center gap-2">
                           <CheckCircle2
-                            className={`h-4 w-4 shrink-0 ${
-                              isB2B ? "text-cyan-400" : isMayorista ? "text-blue-400" : "text-emerald-400"
-                            }`}
+                            className={`h-4 w-4 shrink-0 ${isB2B ? "text-cyan-400" : isMayorista ? "text-blue-400" : "text-emerald-400"
+                              }`}
                           />
                           <span>{feat}</span>
                         </li>
@@ -531,11 +528,10 @@ export default function CaraleCorporativaUI() {
                           setInputMessage(`Hola Caralita, quiero información sobre el plan ${p.title}`);
                         }
                       }}
-                      className={`w-full py-3 rounded-xl text-xs font-bold transition shadow-sm ${
-                        isB2B
+                      className={`w-full py-3 rounded-xl text-xs font-bold transition shadow-sm ${isB2B
                           ? "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-lg shadow-cyan-500/25"
                           : "bg-slate-800 hover:bg-cyan-500 hover:text-white text-slate-200"
-                      }`}
+                        }`}
                     >
                       {p.cta_text}
                     </button>
@@ -632,11 +628,11 @@ export default function CaraleCorporativaUI() {
           >
             <div className="relative">
               <img
-                src="/caralita-avatar.svg"
+                src="/caralita-avatar.jpg"
                 alt="Avatar de Caralita"
                 width={36}
                 height={36}
-                className="w-9 h-9 rounded-full object-cover ring-2 ring-cyan-300/60 shadow-md shadow-cyan-500/30"
+                className="w-9 h-9 rounded-full object-cover object-top ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/30"
               />
               <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-slate-950 animate-pulse" />
             </div>
@@ -652,11 +648,11 @@ export default function CaraleCorporativaUI() {
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <img
-                    src="/caralita-avatar.svg"
+                    src="/caralita-avatar.jpg"
                     alt="Caralita Avatar Oficial"
                     width={40}
                     height={40}
-                    className="w-10 h-10 rounded-full object-cover ring-2 ring-cyan-500/50 shadow-md shadow-cyan-500/20"
+                    className="w-10 h-10 rounded-full object-cover object-top ring-2 ring-cyan-400 shadow-lg shadow-cyan-500/30"
                   />
                   <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
                 </div>
@@ -716,8 +712,8 @@ export default function CaraleCorporativaUI() {
                   >
                     <div
                       className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${isUser
-                          ? "bg-gradient-to-tr from-cyan-600 to-blue-600 text-white"
-                          : "bg-slate-800 text-cyan-400 border border-slate-700"
+                        ? "bg-gradient-to-tr from-cyan-600 to-blue-600 text-white"
+                        : "bg-slate-800 text-cyan-400 border border-slate-700"
                         }`}
                     >
                       {isUser ? <User className="h-3.5 w-3.5" /> : <Bot className="h-3.5 w-3.5" />}
@@ -726,8 +722,8 @@ export default function CaraleCorporativaUI() {
                     <div className="space-y-1.5">
                       <div
                         className={`rounded-2xl p-3 leading-relaxed shadow-sm ${isUser
-                            ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-none"
-                            : "bg-slate-800/90 border border-slate-700/70 text-slate-200 rounded-tl-none"
+                          ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-tr-none"
+                          : "bg-slate-800/90 border border-slate-700/70 text-slate-200 rounded-tl-none"
                           }`}
                       >
                         {msg.photoUrl && (
@@ -831,8 +827,8 @@ export default function CaraleCorporativaUI() {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className={`p-2 rounded-xl border transition ${selectedFile
-                      ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
-                      : "bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border-slate-700"
+                    ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
+                    : "bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border-slate-700"
                     }`}
                   title="Adjuntar comprobante o archivo"
                 >
