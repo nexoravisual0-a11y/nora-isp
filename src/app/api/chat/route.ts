@@ -122,6 +122,24 @@ const NORA_TOOLS: Groq.Chat.ChatCompletionTool[] = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "consultar_procedimiento",
+      description:
+        "Busca y consulta en la Wiki Técnica (isp_knowledge) procedimientos operativos de configuración de ONTs (Huawei/ZTE Bridge, VLANs), protocolos de potencia degradada (< -27 dBm, limpieza SC/APC) o políticas comerciales de reconexión por promesa de pago.",
+      parameters: {
+        type: "object",
+        properties: {
+          termino: {
+            type: "string",
+            description: "Término, palabra clave o concepto a consultar (ej. bridge, huawei, vlan 100, potencia, atenuacion, promesa de pago)",
+          },
+        },
+        required: ["termino"],
+      },
+    },
+  },
 ];
 
 /**
@@ -281,6 +299,56 @@ async function ejecutarCrearTicket(args: {
     estado: "Abierto",
     mensaje: `Ticket ${ticketId} registrado en la Base de Datos Central con prioridad ${args.prioridad} y asignado a guardia técnica.`,
   };
+}
+
+/**
+ * Función ejecutora del Tool: Consulta procedimientos y reglas en la Wiki (isp_knowledge)
+ */
+async function ejecutarConsultarProcedimiento(args: { termino: string }) {
+  const query = (args.termino || "").trim();
+  if (!query) {
+    return {
+      encontrado: false,
+      mensaje: "No se especificó un término para buscar en la Wiki Técnica.",
+    };
+  }
+
+  try {
+    const searchPattern = `%${query}%`;
+    const rows = await sql`
+      SELECT id, category, title, content, keywords
+      FROM isp_knowledge
+      WHERE 
+        title ILIKE ${searchPattern}
+        OR content ILIKE ${searchPattern}
+        OR category ILIKE ${searchPattern}
+        OR ${query.toLowerCase()} = ANY(keywords)
+      LIMIT 3;
+    `;
+
+    if (rows.length === 0) {
+      return {
+        encontrado: false,
+        mensaje: `No se encontraron procedimientos operativos específicos para "${query}" en la Wiki Técnica. Proceder según manual general de normas GPON.`,
+      };
+    }
+
+    const proced = rows[0];
+    return {
+      encontrado: true,
+      titulo: proced.title,
+      categoria: proced.category,
+      procedimiento: proced.content,
+      keywords: proced.keywords,
+      mensaje: `Procedimiento localizado: [${proced.category}] ${proced.title}.\n${proced.content}`,
+    };
+  } catch (err) {
+    console.error("[ERROR TOOL consultar_procedimiento]:", err);
+    return {
+      encontrado: false,
+      mensaje: `Error al acceder a la Wiki Técnica: ${err instanceof Error ? err.message : String(err)}`,
+    };
+  }
 }
 
 /**
@@ -734,6 +802,23 @@ export async function POST(req: NextRequest) {
               { label: "Diagnóstico", valor: resultado.asunto },
             ],
           };
+
+          conversationMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            name: toolCall.function.name,
+            content: JSON.stringify(resultado),
+          });
+        } else if (toolCall.function.name === "consultar_procedimiento") {
+          let toolArgs = { termino: "" };
+          try {
+            toolArgs = JSON.parse(toolCall.function.arguments);
+          } catch (e) {
+            console.error("Error parseando argumentos de consultar_procedimiento:", e);
+          }
+
+          // Consulta en la tabla isp_knowledge de Neon Postgres
+          const resultado = await ejecutarConsultarProcedimiento(toolArgs);
 
           conversationMessages.push({
             role: "tool",

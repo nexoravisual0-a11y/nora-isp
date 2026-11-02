@@ -42,6 +42,17 @@ export interface TicketFTTH {
   prioridad: "Alta" | "Media" | "Baja";
   estado: "Abierto" | "En Proceso" | "Cerrado";
   creado: string;
+  synced?: boolean;
+}
+
+export interface NuevoTicketInput {
+  cliente: string;
+  asunto: string;
+  prioridad?: "Alta" | "Media" | "Baja";
+  tipo?: string;
+  notas?: string;
+  customerId?: string;
+  tecnicoId?: string;
 }
 
 export interface NodoOlt {
@@ -54,6 +65,162 @@ export interface NodoOlt {
   puertosOcupados: number;
   puertosTotales: number;
   atenuacionPromedio: string;
+}
+
+/**
+ * Cliente de contingencia para la API externa de ISPCube
+ */
+async function syncWithIspCubeApi(action: string, payload: Record<string, unknown>): Promise<{ success: boolean; data?: any; error?: string }> {
+  const ispcubeUrl = process.env.ISPCUBE_API_URL;
+  const ispcubeToken = process.env.ISPCUBE_API_TOKEN;
+
+  if (!ispcubeUrl || !ispcubeToken) {
+    return {
+      success: false,
+      error: "ISPCUBE_API_URL o ISPCUBE_API_TOKEN no configurados en las variables de entorno.",
+    };
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s timeout
+
+  try {
+    const res = await fetch(`${ispcubeUrl.replace(/\/+$/, "")}/api/${action}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ispcubeToken}`,
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      return { success: false, error: `ISPCube HTTP ${res.status}: ${errText.slice(0, 120)}` };
+    }
+
+    const data = await res.json().catch(() => ({}));
+    return { success: true, data };
+  } catch (err) {
+    clearTimeout(timeoutId);
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Error de conexión o timeout con ISPCube",
+    };
+  }
+}
+
+/**
+ * Inserta una tarea en sync_queue ante falla o indisponibilidad de la API externa
+ */
+async function enqueueSyncTask(entity: string, action: string, payload: Record<string, unknown>, lastError: string) {
+  try {
+    await sql`
+      INSERT INTO sync_queue (entity, action, payload, status, retries, last_error)
+      VALUES (${entity}, ${action}, ${JSON.stringify(payload)}, 'pending', 0, ${lastError});
+    `;
+    console.warn(`[SYNC_QUEUE ENQUEUED]: Entidad: ${entity} | Acción: ${action} | Error previo: ${lastError}`);
+  } catch (queueErr) {
+    console.error("[CRITICAL: ERROR GUARDANDO EN SYNC_QUEUE]:", queueErr);
+  }
+}
+
+/**
+ * BLOQUE 2: Mutación de Tickets con Persistencia Instantánea en Shadow DB (isp_tickets)
+ * y Fallback / Contingencia hacia sync_queue
+ */
+export async function crearTicket(input: NuevoTicketInput): Promise<{
+  success: boolean;
+  ticketId: string;
+  synced: boolean;
+  message: string;
+  ticket: TicketFTTH;
+}> {
+  try {
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    const ticketIdLegacy = `TCK-${randomSuffix}`;
+    const prioridad = input.prioridad || "Media";
+    const tipo = input.tipo || "Incidencia Técnica";
+    const estado = "Abierto";
+    const notas = input.notas || input.asunto;
+    const customerId = input.customerId || input.cliente;
+    const tecnicoId = input.tecnicoId || "GUARDIA-NOC";
+    const timestampDesc = "Hace un instante";
+
+    // 1. Inserción inmediata en isp_tickets (Shadow DB)
+    const shadowRows = await sql`
+      INSERT INTO isp_tickets (id_ispcube, customer_id, tecnico_id, estado, tipo, notas, synced)
+      VALUES (${ticketIdLegacy}, ${customerId}, ${tecnicoId}, ${estado}, ${tipo}, ${notas}, false)
+      RETURNING id, id_ispcube, customer_id, tecnico_id, estado, tipo, notas, synced, created_at;
+    `;
+
+    // 2. Sincronización en tabla legacy tickets para compatibilidad con el dashboard NOC
+    await sql`
+      INSERT INTO tickets (id, cliente, asunto, prioridad, estado, creado)
+      VALUES (${ticketIdLegacy}, ${input.cliente}, ${input.asunto}, ${prioridad}, ${estado}, ${timestampDesc})
+      ON CONFLICT (id) DO NOTHING;
+    `;
+
+    const shadowTicket = shadowRows[0];
+
+    // 3. Intento de sincronización hacia API de ISPCube
+    const payloadSync = {
+      external_id: ticketIdLegacy,
+      shadow_uuid: shadowTicket?.id,
+      customer: input.cliente,
+      customerId,
+      subject: input.asunto,
+      priority: prioridad,
+      type: tipo,
+      notes: notas,
+    };
+
+    const ispcubeResult = await syncWithIspCubeApi("tickets/create", payloadSync);
+
+    let isSynced = false;
+
+    if (ispcubeResult.success) {
+      isSynced = true;
+      if (shadowTicket?.id) {
+        await sql`
+          UPDATE isp_tickets 
+          SET synced = true, id_ispcube = ${ispcubeResult.data?.id ? String(ispcubeResult.data.id) : ticketIdLegacy}
+          WHERE id = ${shadowTicket.id};
+        `;
+      }
+    } else {
+      // 4. Contingencia: Encolar en sync_queue si falló o no está configurado
+      await enqueueSyncTask("tickets", "create", payloadSync, ispcubeResult.error || "ISPCube inaccesible");
+    }
+
+    const ticketResult: TicketFTTH = {
+      id: ticketIdLegacy,
+      cliente: input.cliente,
+      asunto: input.asunto,
+      prioridad,
+      estado: "Abierto",
+      creado: timestampDesc,
+      synced: isSynced,
+    };
+
+    return {
+      success: true,
+      ticketId: ticketIdLegacy,
+      synced: isSynced,
+      message: isSynced
+        ? `Ticket ${ticketIdLegacy} creado y sincronizado con ISPCube exitosamente.`
+        : `Ticket ${ticketIdLegacy} creado instantáneamente en Shadow DB y encolado en cola de contingencia para sincronización posterior.`,
+      ticket: ticketResult,
+    };
+  } catch (error) {
+    console.error("[SERVER_ACTION crearTicket ERROR]:", error);
+    throw new Error(
+      error instanceof Error ? error.message : "Error al registrar el ticket de soporte en la base de datos."
+    );
+  }
 }
 
 /**
@@ -136,7 +303,8 @@ export async function getCajasNapList(): Promise<string[]> {
 }
 
 /**
- * Registra un nuevo abonado en Neon Serverless Postgres con información de facturación y técnica.
+ * Registra un nuevo abonado en Neon Serverless Postgres con información de facturación y técnica,
+ * reflejando tanto en la tabla legacy como en la Shadow DB (isp_customers & isp_services).
  */
 export async function crearCliente(clienteData: NuevoClienteInput): Promise<ClienteFTTH> {
   try {
@@ -221,6 +389,33 @@ export async function crearCliente(clienteData: NuevoClienteInput): Promise<Clie
         correo,
         condicion_fiscal;
     `;
+
+    // Replicar en Shadow DB (isp_customers e isp_services)
+    try {
+      const ispcubeCleanId = clienteId.replace("CLI-", "");
+      await sql`
+        INSERT INTO isp_customers (id_ispcube, dni, nombre, direccion, estado, saldo)
+        VALUES (${ispcubeCleanId}, ${dni}, ${clienteData.nombre.trim()}, ${domicilio}, 'Activo', 0.00)
+        ON CONFLICT (id_ispcube) DO UPDATE 
+        SET dni = EXCLUDED.dni, nombre = EXCLUDED.nombre, direccion = EXCLUDED.direccion;
+      `;
+
+      await sql`
+        INSERT INTO isp_services (id_ispcube, customer_id, ip, plan, nodo, nap_puerto, rx_power)
+        VALUES (
+          ${'SRV-' + ispcubeCleanId}, 
+          ${ispcubeCleanId}, 
+          ${clienteData.ipPppoe.trim()}, 
+          ${clienteData.plan.trim()}, 
+          ${clienteData.oltConectada.trim()}, 
+          ${clienteData.cajaNap.trim()}, 
+          ${potenciaDbm}
+        )
+        ON CONFLICT (id_ispcube) DO NOTHING;
+      `;
+    } catch (shadowErr) {
+      console.warn("[SHADOW_DB REPLICATION NON-BLOCKING]:", shadowErr);
+    }
 
     const r = rows[0];
     return {

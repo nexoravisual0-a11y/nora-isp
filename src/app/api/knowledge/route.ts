@@ -4,65 +4,56 @@ import { groq } from "@/lib/groq";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Estructura de regla destilada de alta fidelidad
- */
 export interface ReglaDestilada {
   parametro: string;
   valor_o_umbral: string;
   severidad?: "info" | "advertencia" | "critico";
 }
 
-export interface DocumentoDestilado {
-  id?: number | string;
-  titulo: string;
-  categoria: string;
-  resumen_destilado: string;
-  reglas_clave: ReglaDestilada[];
-  comandos_terminal: string[];
-  creado_el?: string;
+export interface ProcedimientoWiki {
+  id: string;
+  category: string;
+  title: string;
+  content: string;
+  keywords: string[];
+  created_at?: string;
 }
-
-// Almacén en memoria de respaldo si Postgres no está conectado o la tabla no existe
-const IN_MEMORY_KNOWLEDGE_STORE: DocumentoDestilado[] = [
-  {
-    titulo: "Normas Ópticas y Umbrales GPON Carale",
-    categoria: "FTTH",
-    resumen_destilado: "• Atenuación óptima en ONU: -15 a -24 dBm\n• Umbral de advertencia: -24 a -27 dBm\n• Umbral crítico de corte: < -27 dBm (Generar Ticket Inmediato)\n• Potencia de transmisión OLT GPON (Clase B+): +1.5 a +5 dBm (1490nm)",
-    reglas_clave: [
-      { parametro: "Potencia óptima ONU", valor_o_umbral: "-15 a -24 dBm", severidad: "info" },
-      { parametro: "Atenuación elevada", valor_o_umbral: "-24 a -27 dBm", severidad: "advertencia" },
-      { parametro: "Potencia crítica / Corte", valor_o_umbral: "< -27 dBm", severidad: "critico" },
-    ],
-    comandos_terminal: [
-      "/interface pppoe-server print",
-      "/interface pppoe-server remove [find user=CLI-1045]",
-      "display ont info 0 1 1",
-    ],
-  },
-];
 
 /**
  * Filtro determinístico de destilación de conocimiento.
- * Extrae reglas duras, umbrales dBm/Mbps, comandos CLI y pares clave-valor,
+ * Extrae reglas duras, umbrales dBm/Mbps, comandos CLI y pares clave-valor/problema-solución,
  * desechando párrafos decorativos, introducciones o saludos.
  */
 export function destilarConocimientoHeuristico(texto: string): {
   resumen_destilado: string;
   reglas_clave: ReglaDestilada[];
   comandos_terminal: string[];
+  keywords: string[];
 } {
   const lineas = texto.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 
   const reglas_clave: ReglaDestilada[] = [];
   const comandos_terminal: string[] = [];
   const bulletsDestilados: string[] = [];
+  const keywordsSet = new Set<string>();
 
   // Expresiones regulares para patrones técnicos
   const regexComandoCLI = /^(\/|\$|>|#|(interface|display|config|show|ip|vlan|gpon|ont|olt|snmp|ping|traceroute))\b/i;
   const regexUmbral = /(<=?|>=?|>|<|=|:)\s*-?\d+(\.\d+)?\s*(dbm|db|mbps|gbps|ms|v|a|w|nm|ghz|mhz|km|m)\b/i;
   const regexClaveValor = /^([A-ZÁÉÍÓÚa-záéíóú0-9_\-\s]{3,35})\s*[:=]\s*([^\n\r]+)$/;
   const regexFiltroRuido = /^(bienvenidos|hola|estimados|este manual|en este documento|el presente documento|a continuación|introducción|resumen general|índice|conclusión|muchas gracias)/i;
+
+  const palabrasClaveCandidatas = [
+    "ont", "huawei", "zte", "fiberhome", "bridge", "router", "vlan", "gpon", "pppoe", 
+    "dbm", "atenuacion", "potencia", "sc/apc", "nap", "splitter", "drop", "fibra", 
+    "corte", "reconexion", "promesa de pago", "moroso", "facturacion", "mikrotik"
+  ];
+
+  for (const kw of palabrasClaveCandidatas) {
+    if (texto.toLowerCase().includes(kw)) {
+      keywordsSet.add(kw);
+    }
+  }
 
   for (const linea of lineas) {
     if (regexFiltroRuido.test(linea)) {
@@ -95,9 +86,9 @@ export function destilarConocimientoHeuristico(texto: string): {
       continue;
     }
 
-    // Detectar pares clave-valor concisos
+    // Detectar pares clave-valor concisos (Problema / Solución / Regla)
     const matchKV = linea.match(regexClaveValor);
-    if (matchKV && matchKV[1].length < 30 && matchKV[2].length < 120) {
+    if (matchKV && matchKV[1].length < 35 && matchKV[2].length < 160) {
       const key = matchKV[1].replace(/^[-*•]\s*/, "").trim();
       const val = matchKV[2].trim();
       reglas_clave.push({
@@ -109,21 +100,22 @@ export function destilarConocimientoHeuristico(texto: string): {
       continue;
     }
 
-    // Si la línea es una directiva técnica corta (menor a 150 caracteres con términos técnicos)
+    // Directiva técnica corta
     if (
-      linea.length <= 150 &&
-      /\b(dbm|ont|onu|olt|nap|splitter|pppoe|fibra|vlan|gpon|sc\/apc|otdr|potencia|atenuación)\b/i.test(linea)
+      linea.length <= 160 &&
+      /\b(dbm|ont|onu|olt|nap|splitter|pppoe|fibra|vlan|gpon|sc\/apc|otdr|potencia|atenuación|conector|limpieza)\b/i.test(linea)
     ) {
       bulletsDestilados.push(`• ${linea.replace(/^[-*•]\s*/, "").trim()}`);
     }
   }
 
-  const resumen_destilado = bulletsDestilados.join("\n") || "No se detectaron reglas técnicas explícitas en el fragmento.";
+  const resumen_destilado = bulletsDestilados.join("\n") || texto.slice(0, 500);
 
   return {
     resumen_destilado,
     reglas_clave,
     comandos_terminal,
+    keywords: Array.from(keywordsSet),
   };
 }
 
@@ -141,7 +133,7 @@ async function destilarConIA(texto: string): Promise<string | null> {
         {
           role: "system",
           content:
-            "Eres un compilador y destilador técnico de telecomunicaciones ISP. Tu tarea es extraer EXCLUSIVAMENTE reglas duras, umbrales ópticos/eléctricos (dBm, ms, Mbps) y comandos exactos de consola. Elimina toda introducción, saludo, texto decorativo o explicativo. Responde ÚNICAMENTE en formato viñetas telegráficas (• Regla: ... o • Comando: ...).",
+            "Eres un compilador y destilador técnico de telecomunicaciones ISP. Extrae EXCLUSIVAMENTE reglas duras, procedimientos paso a paso, pares Problema-Solución, umbrales ópticos/eléctricos (dBm, ms, Mbps) y comandos exactos de consola. Elimina toda introducción, saludo, texto decorativo o explicativo. Responde ÚNICAMENTE en viñetas estructuradas.",
         },
         {
           role: "user",
@@ -158,125 +150,134 @@ async function destilarConIA(texto: string): Promise<string | null> {
 
 /**
  * GET /api/knowledge
- * Retorna las reglas y documentos técnicos destilados actualmente activos
+ * Búsqueda de fragmentos y procedimientos por coincidencia de texto/keywords en la tabla 'isp_knowledge'
+ * Parámetros opcionales: ?q=ont+bridge o ?category=Configuración
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    let dbDocs: any[] = [];
-    try {
-      dbDocs = await sql`
-        SELECT id, titulo, categoria, resumen_destilado, reglas_clave, comandos_terminal, creado_el
-        FROM conocimiento_tecnico
-        ORDER BY id DESC
+    const { searchParams } = new URL(req.url);
+    const query = (searchParams.get("q") || "").trim();
+    const category = (searchParams.get("category") || "").trim();
+
+    let articulos: any[] = [];
+
+    if (query) {
+      const searchPattern = `%${query}%`;
+      // Búsqueda en title, content o matriz de keywords
+      articulos = await sql`
+        SELECT id, category, title, content, keywords, created_at
+        FROM isp_knowledge
+        WHERE 
+          title ILIKE ${searchPattern}
+          OR content ILIKE ${searchPattern}
+          OR category ILIKE ${searchPattern}
+          OR ${query.toLowerCase()} = ANY(keywords)
+        ORDER BY created_at DESC
         LIMIT 20;
       `;
-    } catch {
-      // Si la tabla no existe en la base de datos de Neon, usamos la memoria activa
-      dbDocs = [];
+    } else if (category) {
+      articulos = await sql`
+        SELECT id, category, title, content, keywords, created_at
+        FROM isp_knowledge
+        WHERE category ILIKE ${'%' + category + '%'}
+        ORDER BY created_at DESC
+        LIMIT 20;
+      `;
+    } else {
+      articulos = await sql`
+        SELECT id, category, title, content, keywords, created_at
+        FROM isp_knowledge
+        ORDER BY created_at DESC
+        LIMIT 20;
+      `;
     }
-
-    const items = dbDocs.length > 0 ? dbDocs : IN_MEMORY_KNOWLEDGE_STORE;
 
     return NextResponse.json({
       success: true,
-      total: items.length,
-      documentos: items,
+      total: articulos.length,
+      documentos: articulos,
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : "Error al obtener conocimiento";
-    return NextResponse.json(
-      { success: false, error: errorMsg, documentos: IN_MEMORY_KNOWLEDGE_STORE },
-      { status: 500 }
-    );
+    const errorMsg = err instanceof Error ? err.message : "Error al consultar la base de conocimiento";
+    return NextResponse.json({ success: false, error: errorMsg, documentos: [] }, { status: 500 });
   }
 }
 
 /**
  * POST /api/knowledge
- * Recibe un manual o texto extenso, aplica el filtro de destilación y almacena solo el extracto puro
+ * Ingesta de procedimientos de la Wiki que limpia texto decorativo y persiste
+ * pares problema/solución estructurados y palabras clave en 'isp_knowledge'.
  */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { titulo = "Documentación Técnica", categoria = "General", contenido } = body;
+    const {
+      titulo,
+      title = titulo || "Procedimiento Operativo",
+      categoria,
+      category = categoria || "General",
+      contenido,
+      content = contenido,
+      keywords = [],
+    } = body;
 
-    if (!contenido || typeof contenido !== "string" || contenido.trim().length === 0) {
+    const rawContent = String(content || "").trim();
+
+    if (!rawContent) {
       return NextResponse.json(
-        { error: "El campo 'contenido' es obligatorio y debe contener texto técnico." },
+        { error: "El campo 'content' o 'contenido' es obligatorio y debe contener texto técnico." },
         { status: 400 }
       );
     }
 
-    // 1. Destilación determinística pura (rápida y precisa)
-    const heuristica = destilarConocimientoHeuristico(contenido);
+    // 1. Destilación de conocimiento (eliminar ruido decorativo y extraer pares técnicos)
+    const heuristica = destilarConocimientoHeuristico(rawContent);
 
-    // 2. Destilación semántica asistida si el texto es muy extenso y hay API disponible
-    let resumenFinal = heuristica.resumen_destilado;
-    if (contenido.length > 500) {
-      const resumenIA = await destilarConIA(contenido);
+    let contenidoDestilado = heuristica.resumen_destilado;
+    if (rawContent.length > 500) {
+      const resumenIA = await destilarConIA(rawContent);
       if (resumenIA && resumenIA.trim().length > 0) {
-        resumenFinal = resumenIA.trim();
+        contenidoDestilado = resumenIA.trim();
       }
     }
 
-    const docDestilado: DocumentoDestilado = {
-      titulo: String(titulo).trim(),
-      categoria: String(categoria).trim(),
-      resumen_destilado: resumenFinal,
-      reglas_clave: heuristica.reglas_clave,
-      comandos_terminal: heuristica.comandos_terminal,
-      creado_el: new Date().toISOString(),
-    };
+    // Combinar keywords enviadas con las detectadas
+    const combinedKeywords = Array.from(
+      new Set([
+        ...(Array.isArray(keywords) ? keywords.map((k: string) => String(k).toLowerCase().trim()) : []),
+        ...heuristica.keywords,
+      ])
+    ).filter(Boolean);
 
-    // 3. Almacenar en Neon Postgres si la tabla está disponible
-    try {
-      await sql`
-        CREATE TABLE IF NOT EXISTS conocimiento_tecnico (
-          id SERIAL PRIMARY KEY,
-          titulo VARCHAR(255) NOT NULL,
-          categoria VARCHAR(100) NOT NULL,
-          resumen_destilado TEXT NOT NULL,
-          reglas_clave JSONB,
-          comandos_terminal JSONB,
-          creado_el TIMESTAMP DEFAULT NOW()
-        );
-      `;
+    // 2. Persistencia en la tabla 'isp_knowledge'
+    const insertRes = await sql`
+      INSERT INTO isp_knowledge (category, title, content, keywords)
+      VALUES (
+        ${String(category).trim()}, 
+        ${String(title).trim()}, 
+        ${contenidoDestilado}, 
+        ${combinedKeywords}
+      )
+      RETURNING id, category, title, content, keywords, created_at;
+    `;
 
-      const insertRes = await sql`
-        INSERT INTO conocimiento_tecnico (titulo, categoria, resumen_destilado, reglas_clave, comandos_terminal)
-        VALUES (
-          ${docDestilado.titulo}, 
-          ${docDestilado.categoria}, 
-          ${docDestilado.resumen_destilado}, 
-          ${JSON.stringify(docDestilado.reglas_clave)}, 
-          ${JSON.stringify(docDestilado.comandos_terminal)}
-        )
-        RETURNING id;
-      `;
-      if (insertRes.length > 0) {
-        docDestilado.id = insertRes[0].id;
-      }
-    } catch (dbErr) {
-      console.warn("[KNOWLEDGE DB FALLBACK A MEMORIA]:", dbErr);
-      docDestilado.id = `mem-${Date.now()}`;
-      IN_MEMORY_KNOWLEDGE_STORE.unshift(docDestilado);
-    }
+    const savedDoc = insertRes[0];
 
     return NextResponse.json({
       success: true,
-      mensaje: "Documento técnico destilado exitosamente. Se filtraron saludos y párrafos decorativos.",
-      documento: docDestilado,
+      mensaje: "Procedimiento de la Wiki destilado y persistido exitosamente en isp_knowledge.",
+      documento: savedDoc,
       metricas: {
-        caracteres_originales: contenido.length,
-        caracteres_destilados: docDestilado.resumen_destilado.length,
-        reduccion_porcentual: `${Math.max(0, Math.round((1 - docDestilado.resumen_destilado.length / contenido.length) * 100))}%`,
-        reglas_extraidas: docDestilado.reglas_clave.length,
-        comandos_extraidos: docDestilado.comandos_terminal.length,
+        caracteres_originales: rawContent.length,
+        caracteres_destilados: contenidoDestilado.length,
+        reduccion_porcentual: `${Math.max(0, Math.round((1 - contenidoDestilado.length / rawContent.length) * 100))}%`,
+        reglas_extraidas: heuristica.reglas_clave.length,
+        comandos_extraidos: heuristica.comandos_terminal.length,
+        keywords: combinedKeywords,
       },
     });
   } catch (err: unknown) {
-    const errorMsg = err instanceof Error ? err.message : "Error al procesar destilación de conocimiento";
+    const errorMsg = err instanceof Error ? err.message : "Error al procesar la ingesta en la Wiki";
     return NextResponse.json({ success: false, error: errorMsg }, { status: 500 });
   }
 }
-
