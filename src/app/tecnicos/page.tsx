@@ -21,46 +21,35 @@ import {
   Navigation,
   ShieldAlert,
   UserCheck,
+  MessageSquare,
+  Sparkles,
+  PhoneCall,
+  Clock,
+  Sliders,
+  ExternalLink,
+  Radio,
+  FileText,
+  ChevronDown,
+  Wrench,
+  Check,
 } from "lucide-react";
-
-export interface TechnicalItem {
-  label: string;
-  valor: string;
-  alerta?: boolean;
-  critico?: boolean;
-}
-
-export interface TechnicalPayload {
-  tipo: "cliente" | "nodo" | "ticket";
-  titulo: string;
-  subtitulo?: string;
-  datos: TechnicalItem[];
-}
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  photoUrl?: string | null;
-  technicalPayload?: TechnicalPayload | null;
-}
-
-interface CoordenadasGPS {
-  lat: number;
-  lng: number;
-  precision: number;
-}
+import {
+  getOrdenesTrabajo,
+  reportarCierreOrden,
+  getMensajesInternos,
+  enviarMensajeInterno,
+  OrdenTrabajoTecnico,
+  MensajeInterno,
+} from "@/actions/ispcube-actions";
 
 /**
- * Tarea 1: Compresión Nativa de Imágenes en Cliente con HTML5 Canvas
- * Redimensiona a max-width 1280px (manteniendo aspect ratio) y comprime en JPEG al 60% (0.6).
- * Reduce imágenes de ~5MB a ~250KB en milisegundos directamente en el smartphone del técnico.
+ * Compresión nativa de imágenes en cliente con HTML5 Canvas (max 1280px / 60% JPEG)
  */
 async function compressImageClient(file: File): Promise<{ compressedBlob: Blob; compressedDataUrl: string }> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith("image/")) {
       const reader = new FileReader();
-      reader.onload = () =>
-        resolve({ compressedBlob: file, compressedDataUrl: reader.result as string });
+      reader.onload = () => resolve({ compressedBlob: file, compressedDataUrl: reader.result as string });
       reader.onerror = reject;
       reader.readAsDataURL(file);
       return;
@@ -90,7 +79,6 @@ async function compressImageClient(file: File): Promise<{ compressedBlob: Blob; 
         }
 
         ctx.drawImage(img, 0, 0, width, height);
-
         const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.6);
 
         canvas.toBlob(
@@ -105,9 +93,7 @@ async function compressImageClient(file: File): Promise<{ compressedBlob: Blob; 
           0.6
         );
       };
-      img.onerror = () => {
-        resolve({ compressedBlob: file, compressedDataUrl: e.target?.result as string });
-      };
+      img.onerror = () => resolve({ compressedBlob: file, compressedDataUrl: e.target?.result as string });
       img.src = e.target?.result as string;
     };
     reader.onerror = reject;
@@ -115,60 +101,215 @@ async function compressImageClient(file: File): Promise<{ compressedBlob: Blob; 
   });
 }
 
-function TecnicoPWAInner() {
+function TecnicoPWATrincheraInner() {
   const searchParams = useSearchParams();
-  const techParam = searchParams.get("tech") || "";
+  const techParam = searchParams.get("tech") || "Cuadrilla 1";
+  const tecnicoId = techParam.replace(/_/g, " ");
 
-  // Estado de Jornada Técnica y Geolocalización
-  const [jornadaActiva, setJornadaActiva] = useState(false);
-  const [coordenadasGPS, setCoordenadasGPS] = useState<CoordenadasGPS | null>(null);
-  const [direccionLegible, setDireccionLegible] = useState<string | null>(null);
-  const [cargandoGPS, setCargandoGPS] = useState(false);
-  const [cargandoDireccion, setCargandoDireccion] = useState(false);
-  const [errorGPS, setErrorGPS] = useState<string | null>(null);
+  // Estado de órdenes de trabajo
+  const [ordenes, setOrdenes] = useState<OrdenTrabajoTecnico[]>([]);
+  const [isLoadingOrdenes, setIsLoadingOrdenes] = useState(true);
+  const [errorOrdenes, setErrorOrdenes] = useState<string | null>(null);
 
-  // Estado del Chat y Adjuntos
-  const [messages, setMessages] = useState<Message[]>([
+  // Estado del Drawer / Modal de Cierre y Telemetría Óptica
+  const [ordenSeleccionada, setOrdenSeleccionada] = useState<OrdenTrabajoTecnico | null>(null);
+  const [rxPowerInput, setRxPowerInput] = useState<string>("-19.5");
+  const [estadoFinal, setEstadoFinal] = useState<"Resuelto" | "Requiere Fusión / Derivación">("Resuelto");
+  const [observacionesCierre, setObservacionesCierre] = useState<string>("");
+  const [isSubmittingCierre, setIsSubmittingCierre] = useState(false);
+  const [mensajeFeedback, setMensajeFeedback] = useState<string | null>(null);
+
+  // Estado del Chat Interno (internal_messages)
+  const [isChatInternoOpen, setIsChatInternoOpen] = useState(false);
+  const [mensajesInternos, setMensajesInternos] = useState<MensajeInterno[]>([]);
+  const [inputChatInterno, setInputChatInterno] = useState("");
+  const [isSendingMensaje, setIsSendingMensaje] = useState(false);
+
+  // Estado del Copilot Flotante de Caralita (Wiki RAG)
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [copilotMessages, setCopilotMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>([
     {
       role: "assistant",
-      content: techParam
-        ? `¡Hola ${techParam.replace("_", " ")}! Caralita IA Nivel 3 en línea. Estoy lista para asistirte en campo con telemetría óptica de NAPs, ONUs y apertura de tickets con geolocalización activa.`
-        : "Caralita NOC lista para asistencia en campo. Envía ID de cliente, caja NAP o captura una foto del splitter/power meter para diagnóstico instantáneo.",
+      content: `¡Hola ${tecnicoId}! Soy Caralita Copilot. Tengo acceso a la Wiki Técnica (isp_knowledge). Puedes consultarme configuraciones ONT (Bridge VLAN 100), protocolos de atenuación (< -27 dBm) o políticas de reconexión.`,
     },
   ]);
-  const [inputMessage, setInputMessage] = useState("");
+  const [copilotInput, setCopilotInput] = useState("");
+  const [isCopilotLoading, setIsCopilotLoading] = useState(false);
   const [attachedPhoto, setAttachedPhoto] = useState<File | null>(null);
-  const [compressedBase64, setCompressedBase64] = useState<string | null>(null);
+  const [compressedPhotoUrl, setCompressedPhotoUrl] = useState<string | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isSending, setIsSending] = useState(false);
-  const [chatError, setChatError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatInternoEndRef = useRef<HTMLDivElement>(null);
+  const copilotEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll en nuevos mensajes
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isSending]);
+  // Cargar órdenes y mensajes al montar
+  const fetchOrdenes = async () => {
+    setIsLoadingOrdenes(true);
+    setErrorOrdenes(null);
+    try {
+      const data = await getOrdenesTrabajo(tecnicoId);
+      setOrdenes(data);
+    } catch (err) {
+      setErrorOrdenes("Error cargando órdenes de trabajo.");
+    } finally {
+      setIsLoadingOrdenes(false);
+    }
+  };
 
-  // Manejo de previsualización de foto si no vino del canvas
+  const fetchMensajes = async () => {
+    try {
+      const data = await getMensajesInternos();
+      setMensajesInternos(data);
+    } catch (e) {
+      console.warn("Error cargando mensajes internos:", e);
+    }
+  };
+
   useEffect(() => {
-    if (!attachedPhoto) {
-      setPhotoPreview(null);
-      setCompressedBase64(null);
+    fetchOrdenes();
+    fetchMensajes();
+  }, [tecnicoId]);
+
+  useEffect(() => {
+    if (isChatInternoOpen) {
+      chatInternoEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [mensajesInternos, isChatInternoOpen]);
+
+  useEffect(() => {
+    if (isCopilotOpen) {
+      copilotEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [copilotMessages, isCopilotLoading, isCopilotOpen]);
+
+  // Manejo de Semáforo de Potencia Óptica
+  const numRx = parseFloat(rxPowerInput);
+  const rxColorClass =
+    isNaN(numRx)
+      ? "text-slate-400 bg-slate-800 border-slate-700"
+      : numRx >= -24.0 && numRx <= -15.0
+      ? "text-emerald-400 bg-emerald-950/80 border-emerald-500 shadow-emerald-900/50"
+      : numRx < -24.0 && numRx > -27.0
+      ? "text-amber-300 bg-amber-950/80 border-amber-500 shadow-amber-900/50"
+      : "text-rose-400 bg-rose-950/80 border-rose-500 shadow-rose-900/50";
+
+  const rxStatusLabel =
+    isNaN(numRx)
+      ? "Ingrese valor"
+      : numRx >= -24.0 && numRx <= -15.0
+      ? "ÓPTIMO (-15 a -24 dBm)"
+      : numRx < -24.0 && numRx > -27.0
+      ? "DEGRADADO (-25 a -26.9 dBm)"
+      : "CRÍTICO (<= -27 dBm)";
+
+  // Enviar Cierre de Orden
+  const handleReportarCierre = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ordenSeleccionada) return;
+
+    const valRx = parseFloat(rxPowerInput);
+    if (isNaN(valRx)) {
+      alert("Por favor ingresa un valor numérico para la potencia óptica (dBm).");
       return;
     }
-    if (!compressedBase64) {
-      const objectUrl = URL.createObjectURL(attachedPhoto);
-      setPhotoPreview(objectUrl);
-      return () => URL.revokeObjectURL(objectUrl);
-    }
-  }, [attachedPhoto, compressedBase64]);
 
-  /**
-   * Tarea 1: Captura de Foto con Compresión Nativa HTML5 Canvas
-   */
+    setIsSubmittingCierre(true);
+    setMensajeFeedback(null);
+
+    try {
+      const res = await reportarCierreOrden({
+        ticketId: ordenSeleccionada.id,
+        customerId: ordenSeleccionada.customerId || ordenSeleccionada.cliente,
+        tecnicoId,
+        rxPower: valRx,
+        estadoFinal,
+        observaciones: observacionesCierre,
+      });
+
+      setMensajeFeedback(res.message);
+      // Actualizar orden localmente
+      setOrdenes((prev) =>
+        prev.map((o) =>
+          o.id === ordenSeleccionada.id
+            ? { ...o, estado: estadoFinal === "Resuelto" ? "Cerrado" : "Derivado", rxPower: valRx }
+            : o
+        )
+      );
+
+      setTimeout(() => {
+        setOrdenSeleccionada(null);
+        setMensajeFeedback(null);
+        setObservacionesCierre("");
+      }, 1800);
+    } catch (err: any) {
+      alert("Error al reportar cierre: " + err.message);
+    } finally {
+      setIsSubmittingCierre(false);
+    }
+  };
+
+  // Enviar mensaje interno rápido
+  const handleSendMensajeInterno = async (contenidoTexto?: string) => {
+    const texto = (contenidoTexto || inputChatInterno).trim();
+    if (!texto || isSendingMensaje) return;
+
+    setIsSendingMensaje(true);
+    try {
+      const nuevo = await enviarMensajeInterno({
+        senderId: tecnicoId,
+        role: "Técnico Campo",
+        ticketId: ordenSeleccionada?.id,
+        content: texto,
+      });
+      setMensajesInternos((prev) => [...prev, nuevo]);
+      if (!contenidoTexto) setInputChatInterno("");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSendingMensaje(false);
+    }
+  };
+
+  // Enviar consulta a Caralita Copilot
+  const handleSendCopilot = async (promptDirecto?: string) => {
+    const query = (promptDirecto || copilotInput).trim();
+    if ((!query && !compressedPhotoUrl) || isCopilotLoading) return;
+
+    const userMsg = { role: "user" as const, content: query };
+    const nuevosMensajes = [...copilotMessages, userMsg];
+    setCopilotMessages(nuevosMensajes);
+    if (!promptDirecto) setCopilotInput("");
+    setIsCopilotLoading(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: nuevosMensajes,
+          source: "noc",
+          image: compressedPhotoUrl || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.content) {
+        setCopilotMessages((prev) => [...prev, { role: "assistant", content: data.content }]);
+      }
+      setAttachedPhoto(null);
+      setCompressedPhotoUrl(null);
+    } catch (err) {
+      setCopilotMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Error al conectar con Caralita. Reintentando por fallback..." },
+      ]);
+    } finally {
+      setIsCopilotLoading(false);
+    }
+  };
+
+  // Captura de imagen comprimida con Canvas
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -176,574 +317,541 @@ function TecnicoPWAInner() {
     setIsCompressing(true);
     try {
       const { compressedBlob, compressedDataUrl } = await compressImageClient(file);
-      const compressedFile = new File([compressedBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-        type: "image/jpeg",
-      });
-      setAttachedPhoto(compressedFile);
-      setCompressedBase64(compressedDataUrl);
-      setPhotoPreview(compressedDataUrl);
+      setAttachedPhoto(new File([compressedBlob], file.name, { type: "image/jpeg" }));
+      setCompressedPhotoUrl(compressedDataUrl);
     } catch (err) {
-      console.warn("[CANVAS_COMPRESS_ERROR]:", err);
-      setAttachedPhoto(file);
+      console.warn("Fallo compresión:", err);
     } finally {
       setIsCompressing(false);
     }
   };
 
-  /**
-   * Misión 2: Conexión del Módulo GPS (API Nativa) + Reverse Geocoding
-   */
-  const handleToggleJornada = () => {
-    if (jornadaActiva) {
-      setJornadaActiva(false);
-      setCoordenadasGPS(null);
-      setDireccionLegible(null);
-      setErrorGPS(null);
-      return;
-    }
-
-    if (!navigator.geolocation) {
-      setErrorGPS("La API de Geolocalización no está soportada en este navegador.");
-      return;
-    }
-
-    setCargandoGPS(true);
-    setErrorGPS(null);
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-        const lat = Number(latitude.toFixed(6));
-        const lng = Number(longitude.toFixed(6));
-        const prec = Math.round(accuracy);
-
-        setCoordenadasGPS({
-          lat,
-          lng,
-          precision: prec,
-        });
-        setJornadaActiva(true);
-        setCargandoGPS(false);
-
-        // Reverse Geocoding con Nominatim OpenStreetMap
-        setCargandoDireccion(true);
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`,
-            {
-              headers: {
-                "Accept-Language": "es",
-              },
-            }
-          );
-
-          if (res.ok) {
-            const data = await res.json();
-            const addr = data.address || {};
-            const calle = addr.road || addr.street || addr.pedestrian || "";
-            const numero = addr.house_number || "";
-            const barrio =
-              addr.suburb ||
-              addr.neighbourhood ||
-              addr.city_district ||
-              addr.quarter ||
-              "";
-            const ciudad =
-              addr.city ||
-              addr.town ||
-              addr.municipality ||
-              addr.village ||
-              "";
-
-            const partes: string[] = [];
-            if (calle) {
-              partes.push(numero ? `${calle} ${numero}` : calle);
-            }
-            if (barrio) {
-              partes.push(barrio);
-            } else if (ciudad) {
-              partes.push(ciudad);
-            }
-
-            const direccionFinal =
-              partes.length > 0
-                ? partes.join(", ")
-                : (data.display_name?.split(",").slice(0, 2).join(",") || "Ubicación GPS capturada");
-
-            setDireccionLegible(direccionFinal);
-          } else {
-            setDireccionLegible("Ubicación GPS capturada");
-          }
-        } catch (geoErr) {
-          console.warn("[REVERSE_GEOCODING_WARN]:", geoErr);
-          setDireccionLegible("Ubicación GPS capturada");
-        } finally {
-          setCargandoDireccion(false);
-        }
-      },
-      (err) => {
-        console.error("[GPS_ERROR]:", err);
-        setCargandoGPS(false);
-        let mensajeError = "No se pudo obtener la ubicación GPS.";
-        if (err.code === err.PERMISSION_DENIED) {
-          mensajeError =
-            "Permiso de ubicación denegado. Habilita los permisos de GPS en tu navegador o dispositivo para registrar la guardia.";
-        } else if (err.code === err.POSITION_UNAVAILABLE) {
-          mensajeError = "Señal de GPS no disponible en esta zona.";
-        } else if (err.code === err.TIMEOUT) {
-          mensajeError = "Tiempo de espera agotado al consultar el sensor de GPS.";
-        }
-        setErrorGPS(mensajeError);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 12000,
-        maximumAge: 0,
-      }
-    );
-  };
-
-  /**
-   * Misión 3 & 4: Conexión Multimodal e Inyección de Identidad de Cuadrilla
-   */
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-
-    const trimmedText = inputMessage.trim();
-    if ((!trimmedText && !attachedPhoto) || isSending) return;
-
-    setChatError(null);
-    setIsSending(true);
-
-    let base64Image: string | null = compressedBase64;
-
-    try {
-      if (attachedPhoto && !base64Image) {
-        base64Image = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = (error) => reject(error);
-          reader.readAsDataURL(attachedPhoto);
-        });
-      }
-
-      const promptText =
-        trimmedText ||
-        (base64Image
-          ? "Analiza técnicamente esta imagen capturada en campo e indica diagnóstico, fallas visibles o atenuación."
-          : "");
-
-      const userMsg: Message = {
-        role: "user",
-        content: promptText,
-        photoUrl: photoPreview,
-      };
-
-      const nextMessages = [...messages, userMsg];
-      setMessages(nextMessages);
-      setInputMessage("");
-      setAttachedPhoto(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-
-      // Tarea 4: Empaquetar información técnica de forma oculta en el payload para la API
-      const direccionTraducida =
-        direccionLegible ||
-        (coordenadasGPS
-          ? `Lat ${coordenadasGPS.lat}, Lng ${coordenadasGPS.lng} (±${coordenadasGPS.precision}m)`
-          : "Ubicación GPS no reportada");
-
-      const payloadOculto = `[Técnico: ${techParam || "Desconocido"}, Ubicación: ${direccionTraducida}] - Mensaje: ${promptText}`;
-
-      // Envío a /api/chat con source: 'noc'
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: nextMessages.map((m, idx) => ({
-            role: m.role,
-            content: idx === nextMessages.length - 1 ? payloadOculto : m.content,
-          })),
-          source: "noc",
-          image: base64Image,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data?.error || "Error al comunicarse con Caralita IA en el NOC.");
-      }
-
-      if (data.content) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: data.content,
-            technicalPayload: data.technicalPayload || null,
-          },
-        ]);
-      } else {
-        throw new Error("Respuesta vacía del servidor.");
-      }
-    } catch (err) {
-      console.error("[PWA_TECNICOS_ERROR]:", err);
-      const msg = err instanceof Error ? err.message : "Error de comunicación en campo.";
-      setChatError(msg);
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  const handleQuickAction = (texto: string) => {
-    setInputMessage(texto);
-  };
-
   return (
-    <div className="flex h-screen w-full flex-col bg-slate-950 text-slate-100 font-sans select-none overflow-hidden">
-      {/* Header PWA Móvil */}
-      <header className="h-16 px-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between backdrop-blur-md shrink-0 shadow-lg z-20">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none pb-20">
+      {/* 1. Header Táctil de Trinchera (Alto Contraste) */}
+      <header className="sticky top-0 z-30 bg-slate-900 border-b-2 border-cyan-500/80 px-4 py-3 flex items-center justify-between shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <Link
             href="/"
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 active:scale-95 transition"
             title="Volver al NOC"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-6 w-6" />
           </Link>
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 font-black text-white shadow-md shadow-cyan-500/25">
-            C
-          </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-sm tracking-tight text-white">CARALE</span>
-              <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950 px-1.5 py-0.5 rounded border border-cyan-800/60 font-mono">
-                PWA Técnicos
-              </span>
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <h1 className="text-sm font-black tracking-tight text-white uppercase">TRINCHERA FTTH</h1>
             </div>
-            <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
-              {techParam ? (
-                <span className="flex items-center gap-1 text-cyan-300 font-semibold">
-                  <UserCheck className="h-3 w-3 text-emerald-400" />
-                  {techParam.replace("_", " ")}
-                </span>
-              ) : (
-                <span>Cuadrilla & Operaciones FTTH</span>
-              )}
-            </div>
+            <span className="text-[11px] font-mono font-bold text-cyan-400">{tecnicoId}</span>
           </div>
         </div>
 
-        {/* Toggle de Jornada y Estado GPS */}
         <div className="flex items-center gap-2">
+          {/* Botón Chat Interno */}
           <button
-            onClick={handleToggleJornada}
-            disabled={cargandoGPS}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
-              jornadaActiva
-                ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700"
-            }`}
+            onClick={() => setIsChatInternoOpen(!isChatInternoOpen)}
+            className="relative h-11 px-3.5 flex items-center gap-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 font-bold text-xs active:scale-95 transition shadow-sm"
           >
-            {cargandoGPS ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin text-cyan-400" />
-            ) : (
-              <Power
-                className={`h-3.5 w-3.5 ${jornadaActiva ? "text-emerald-400" : "text-slate-400"}`}
-              />
+            <MessageSquare className="h-5 w-5" />
+            <span className="hidden sm:inline">Interno</span>
+            {mensajesInternos.length > 0 && (
+              <span className="h-2 w-2 rounded-full bg-cyan-400 absolute top-2 right-2" />
             )}
-            <span>{jornadaActiva ? "En Jornada" : "Iniciar Guardia"}</span>
+          </button>
+
+          {/* Botón Refrescar */}
+          <button
+            onClick={fetchOrdenes}
+            disabled={isLoadingOrdenes}
+            className="h-11 w-11 flex items-center justify-center rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 active:scale-95 transition disabled:opacity-50"
+            title="Recargar órdenes"
+          >
+            <RefreshCw className={`h-5 w-5 ${isLoadingOrdenes ? "animate-spin text-cyan-400" : ""}`} />
           </button>
         </div>
       </header>
 
-      {/* Barra de Estado GPS en Vivo con Dirección Legible */}
-      {jornadaActiva && coordenadasGPS && (
-        <div className="bg-slate-900/90 border-b border-slate-800/90 px-4 py-2 flex items-center justify-between text-xs text-slate-300 backdrop-blur shrink-0 shadow-inner">
-          <div className="flex items-center gap-2 min-w-0 pr-2">
-            <span className="relative flex h-2 w-2 shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-            </span>
-            <MapPin className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
-            <div className="min-w-0">
-              <span className="font-semibold text-white truncate block">
-                {cargandoDireccion ? (
-                  <span className="text-slate-400 italic font-mono text-[11px]">
-                    Identificando calle y barrio...
+      {/* 2. Contenedor de Órdenes de Trabajo (Mobile-First / Botones Grandes) */}
+      <main className="flex-1 p-3 sm:p-5 max-w-2xl mx-auto w-full space-y-3.5">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Órdenes Asignadas ({ordenes.length})
+          </span>
+          <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-md">
+            GPS Activo
+          </span>
+        </div>
+
+        {isLoadingOrdenes ? (
+          <div className="p-12 text-center text-cyan-400 flex flex-col items-center gap-3">
+            <RefreshCw className="h-8 w-8 animate-spin" />
+            <span className="text-xs font-bold font-mono">Sincronizando órdenes con Shadow DB...</span>
+          </div>
+        ) : ordenes.length === 0 ? (
+          <div className="p-10 rounded-2xl border-2 border-dashed border-slate-800 text-center text-slate-500 font-medium">
+            No tienes órdenes de trabajo pendientes en esta cuadrilla.
+          </div>
+        ) : (
+          ordenes.map((orden) => {
+            const isCritica = orden.prioridad === "Alta";
+            const isCerrada = orden.estado === "Cerrado";
+            const isDerivada = orden.estado === "Derivado";
+
+            return (
+              <div
+                key={orden.id}
+                className={`rounded-2xl border-2 p-4 transition shadow-lg ${
+                  isCerrada
+                    ? "bg-slate-900/40 border-slate-800 opacity-60"
+                    : isCritica
+                    ? "bg-slate-900/90 border-rose-500/80 shadow-rose-950/20"
+                    : "bg-slate-900/90 border-slate-700/80 shadow-slate-950/40"
+                }`}
+              >
+                {/* Cabecera Tarjeta: ID y Estado */}
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-black px-2.5 py-1 rounded-md bg-slate-800 text-cyan-300 border border-slate-700">
+                      {orden.id}
+                    </span>
+                    <span
+                      className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded ${
+                        isCritica ? "bg-rose-500/20 text-rose-300 border border-rose-500/40" : "bg-cyan-500/20 text-cyan-300"
+                      }`}
+                    >
+                      Prioridad {orden.prioridad}
+                    </span>
+                  </div>
+                  <span
+                    className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                      isCerrada
+                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                        : isDerivada
+                        ? "bg-amber-500/20 text-amber-300"
+                        : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                    }`}
+                  >
+                    {orden.estado}
                   </span>
-                ) : (
-                  direccionLegible || "Ubicación GPS capturada"
-                )}
-              </span>
+                </div>
+
+                {/* Abonado y Dirección */}
+                <h2 className="text-base font-black text-white leading-snug">{orden.cliente}</h2>
+                <div className="flex items-start gap-1.5 text-xs text-slate-300 mt-1 mb-2 font-medium">
+                  <MapPin className="h-4 w-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <span>{orden.direccion}</span>
+                </div>
+
+                {/* Problema Reportado */}
+                <div className="rounded-xl bg-slate-950/80 border border-slate-800/80 p-2.5 my-3 text-xs text-slate-300 leading-relaxed font-sans">
+                  <span className="text-[10px] uppercase font-bold text-slate-500 block mb-0.5">Motivo de Reclamo:</span>
+                  {orden.problema}
+                </div>
+
+                {/* Botones de Acción Táctil (Mínimo 48px de alto táctil) */}
+                <div className="grid grid-cols-2 gap-2.5 pt-1">
+                  {/* Botón de Navegación GPS (Google Maps) */}
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${orden.lat || -27.5924},${orden.lng || -56.6845}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-12 min-h-[48px] rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 border-2 border-slate-700 text-cyan-300 flex items-center justify-center gap-2 font-bold text-xs shadow-md transition"
+                  >
+                    <Navigation className="h-5 w-5 text-cyan-400" />
+                    <span>Navegar GPS</span>
+                  </a>
+
+                  {/* Botón Reportar Cierre / Telemetría */}
+                  <button
+                    onClick={() => {
+                      setOrdenSeleccionada(orden);
+                      if (orden.rxPower !== null && orden.rxPower !== undefined) {
+                        setRxPowerInput(String(orden.rxPower));
+                      }
+                    }}
+                    className={`h-12 min-h-[48px] rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md active:scale-95 transition ${
+                      isCerrada
+                        ? "bg-slate-800 text-slate-400 border border-slate-700"
+                        : "bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-950/50"
+                    }`}
+                  >
+                    <Sliders className="h-5 w-5" />
+                    <span>{isCerrada ? "Ver Telemetría" : "Cierre / Rx dBm"}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </main>
+
+      {/* 3. Modal / Drawer Rápido de Cierre y Telemetría Óptica */}
+      {ordenSeleccionada && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg bg-slate-900 border-t-2 sm:border-2 border-cyan-500/80 rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
+              <div>
+                <h3 className="text-base font-black text-white flex items-center gap-2">
+                  <Sliders className="h-5 w-5 text-cyan-400" />
+                  Reporte de Potencia y Cierre
+                </h3>
+                <span className="text-xs text-slate-400 font-mono">
+                  {ordenSeleccionada.id} • {ordenSeleccionada.cliente}
+                </span>
+              </div>
+              <button
+                onClick={() => setOrdenSeleccionada(null)}
+                className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+              >
+                <X className="h-6 w-6" />
+              </button>
             </div>
-          </div>
-          <div className="shrink-0 text-right">
-            <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/50 block">
-              ±{coordenadasGPS.precision}m
-            </span>
+
+            {mensajeFeedback ? (
+              <div className="p-6 text-center space-y-3">
+                <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto animate-bounce" />
+                <p className="text-sm font-bold text-white">{mensajeFeedback}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleReportarCierre} className="space-y-4">
+                {/* Semáforo de Potencia Óptica Rx */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                      Potencia Óptica Rx en Roseta / ONU (dBm)
+                    </label>
+                    <span className="text-[11px] font-bold font-mono text-cyan-400">{rxStatusLabel}</span>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={rxPowerInput}
+                      onChange={(e) => setRxPowerInput(e.target.value)}
+                      required
+                      placeholder="-19.5"
+                      className={`w-full h-14 text-2xl font-black font-mono text-center rounded-2xl border-2 transition focus:outline-none focus:ring-2 focus:ring-cyan-400 ${rxColorClass}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Selector de Estado Rápido */}
+                <div>
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                    Resolución de la Intervención
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEstadoFinal("Resuelto")}
+                      className={`h-12 min-h-[48px] rounded-xl font-bold text-xs flex items-center justify-center gap-2 border-2 transition ${
+                        estadoFinal === "Resuelto"
+                          ? "bg-emerald-500/20 text-emerald-300 border-emerald-500"
+                          : "bg-slate-800 text-slate-400 border-slate-700"
+                      }`}
+                    >
+                      <Check className="h-5 w-5" />
+                      <span>Resuelto (OK)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEstadoFinal("Requiere Fusión / Derivación")}
+                      className={`h-12 min-h-[48px] rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border-2 transition text-center px-2 ${
+                        estadoFinal === "Requiere Fusión / Derivación"
+                          ? "bg-rose-500/20 text-rose-300 border-rose-500"
+                          : "bg-slate-800 text-slate-400 border-slate-700"
+                      }`}
+                    >
+                      <AlertTriangle className="h-5 w-5 shrink-0" />
+                      <span>Derivar Fusión</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Observaciones */}
+                <div>
+                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                    Notas Técnicas / Conector / Splice
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={observacionesCierre}
+                    onChange={(e) => setObservacionesCierre(e.target.value)}
+                    placeholder="Ej. Conector SC/APC rearmado, potencia normalizada en roseta..."
+                    className="w-full rounded-xl bg-slate-950 border border-slate-800 p-3 text-xs text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none"
+                  />
+                </div>
+
+                {/* Botón de Envío Instantáneo */}
+                <button
+                  type="submit"
+                  disabled={isSubmittingCierre}
+                  className="w-full h-14 min-h-[48px] rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-black text-sm uppercase tracking-wider shadow-lg shadow-cyan-950/60 disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  {isSubmittingCierre ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      <span>Sincronizando con Shadow DB...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-5 w-5" />
+                      <span>Guardar Cierre de Orden</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
 
-      {/* Alerta de Error de GPS */}
-      {errorGPS && (
-        <div className="bg-rose-950/70 border-b border-rose-800/80 px-4 py-2 flex items-center justify-between text-xs text-rose-300 shrink-0 animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-rose-400 shrink-0" />
-            <span className="line-clamp-1">{errorGPS}</span>
+      {/* 4. Chat Interno Colapsable (internal_messages) */}
+      {isChatInternoOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-40 bg-slate-900 border-t-2 border-cyan-500/80 shadow-2xl rounded-t-3xl max-w-2xl mx-auto h-[75vh] flex flex-col animate-in slide-in-from-bottom duration-200">
+          {/* Header Chat */}
+          <div className="p-3.5 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Radio className="h-5 w-5 text-cyan-400 animate-pulse" />
+              <h3 className="text-sm font-bold text-white">Canal Interno de Guardia NOC</h3>
+            </div>
+            <button
+              onClick={() => setIsChatInternoOpen(false)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            onClick={() => setErrorGPS(null)}
-            className="text-[10px] text-rose-400 hover:text-white underline ml-2"
-          >
-            Cerrar
-          </button>
+
+          {/* Botones de Mensajes Rápidos de Trinchera */}
+          <div className="p-2 bg-slate-950/60 border-b border-slate-800 flex gap-2 overflow-x-auto text-xs no-scrollbar">
+            {[
+              "Llegué al domicilio",
+              "Punto NAP saturado",
+              "Necesito corte de señal",
+              "Potencia normalizada",
+            ].map((msgRapido) => (
+              <button
+                key={msgRapido}
+                onClick={() => handleSendMensajeInterno(msgRapido)}
+                className="whitespace-nowrap px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-semibold border border-slate-700 active:scale-95"
+              >
+                {msgRapido}
+              </button>
+            ))}
+          </div>
+
+          {/* Lista de Mensajes */}
+          <div className="flex-1 p-3 overflow-y-auto space-y-2.5">
+            {mensajesInternos.length === 0 ? (
+              <div className="text-center text-xs text-slate-500 py-8">
+                No hay mensajes recientes en el canal de guardia.
+              </div>
+            ) : (
+              mensajesInternos.map((m) => {
+                const esMio = m.sender_id === tecnicoId;
+                return (
+                  <div key={m.id} className={`flex flex-col ${esMio ? "items-end" : "items-start"}`}>
+                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-mono mb-0.5">
+                      <span className="font-bold text-cyan-400">{m.sender_id}</span>
+                      <span>• {m.created_at}</span>
+                    </div>
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs font-medium leading-relaxed ${
+                        esMio
+                          ? "bg-cyan-600 text-white rounded-tr-none shadow-md"
+                          : "bg-slate-800 text-slate-200 rounded-tl-none border border-slate-700"
+                      }`}
+                    >
+                      {m.content}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={chatInternoEndRef} />
+          </div>
+
+          {/* Input Mensaje */}
+          <div className="p-3 border-t border-slate-800 bg-slate-950 flex gap-2">
+            <input
+              type="text"
+              value={inputChatInterno}
+              onChange={(e) => setInputChatInterno(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSendMensajeInterno()}
+              placeholder="Escribe a la guardia técnica..."
+              className="flex-1 h-12 rounded-xl bg-slate-900 border border-slate-800 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+            />
+            <button
+              onClick={() => handleSendMensajeInterno()}
+              disabled={!inputChatInterno.trim() || isSendingMensaje}
+              className="h-12 w-12 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white flex items-center justify-center disabled:opacity-40 transition"
+            >
+              <Send className="h-5 w-5" />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Acciones Rápidas para Cuadrilla */}
-      <div className="bg-slate-950/60 border-b border-slate-800/60 px-4 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+      {/* 5. Botón Flotante y Modal de Caralita Copilot (RAG Wiki) */}
+      <div className="fixed bottom-4 right-4 z-40">
         <button
-          onClick={() => handleQuickAction("Auditar potencia óptica y puertos en Caja NAP-04")}
-          className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-[11px] font-semibold text-slate-300 border border-slate-800 hover:border-cyan-500/30 transition flex items-center gap-1.5"
+          onClick={() => setIsCopilotOpen(!isCopilotOpen)}
+          className="h-14 w-14 rounded-full bg-gradient-to-tr from-cyan-500 via-teal-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-2xl shadow-cyan-500/50 flex items-center justify-center border-2 border-cyan-400 active:scale-95 transition"
+          title="Consultar Wiki y Procedimientos con Caralita"
         >
-          <Layers className="h-3 w-3 text-cyan-400" />
-          <span>Auditar NAP</span>
-        </button>
-        <button
-          onClick={() => handleQuickAction("Verificar estado de cliente CLI-1045 y potencia ONU")}
-          className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-[11px] font-semibold text-slate-300 border border-slate-800 hover:border-cyan-500/30 transition flex items-center gap-1.5"
-        >
-          <Activity className="h-3 w-3 text-emerald-400" />
-          <span>Estado ONU</span>
-        </button>
-        <button
-          onClick={() =>
-            handleQuickAction("Crear ticket de urgencia por atenuación crítica en splitter")
-          }
-          className="whitespace-nowrap px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-[11px] font-semibold text-slate-300 border border-slate-800 hover:border-rose-500/30 transition flex items-center gap-1.5"
-        >
-          <AlertTriangle className="h-3 w-3 text-rose-400" />
-          <span>Abrir Ticket</span>
+          <Sparkles className="h-7 w-7 animate-spin-slow" />
         </button>
       </div>
 
-      {/* Contenedor Principal del Chat */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg, index) => {
-          const isUser = msg.role === "user";
-          return (
-            <div
-              key={index}
-              className={`flex gap-3 max-w-[92%] sm:max-w-[80%] ${
-                isUser ? "ml-auto flex-row-reverse" : "mr-auto"
-              }`}
-            >
-              <div
-                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${
-                  isUser
-                    ? "bg-gradient-to-tr from-cyan-600 to-blue-600 text-white shadow-sm"
-                    : "bg-slate-900 border border-slate-800 text-cyan-400"
-                }`}
-              >
-                {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+      {isCopilotOpen && (
+        <div className="fixed inset-x-0 bottom-0 z-50 bg-slate-900 border-t-2 border-cyan-400 rounded-t-3xl shadow-2xl max-w-2xl mx-auto h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-200">
+          {/* Header Copilot */}
+          <div className="p-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center">
+                <Bot className="h-5 w-5" />
               </div>
+              <div>
+                <h3 className="text-xs font-bold text-white flex items-center gap-1.5">
+                  Caralita Copilot <span className="text-[10px] text-cyan-400 font-mono">RAG WIKI</span>
+                </h3>
+                <span className="text-[10px] text-slate-400">Consultas técnicas de campo</span>
+              </div>
+            </div>
+            <button onClick={() => setIsCopilotOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-white">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
 
-              <div className="space-y-2">
-                <div
-                  className={`rounded-2xl p-3.5 text-xs leading-relaxed shadow-md ${
-                    isUser
-                      ? "bg-gradient-to-r from-cyan-600/90 to-blue-600/90 text-white rounded-tr-none"
-                      : "bg-slate-900/90 border border-slate-800 text-slate-200 rounded-tl-none backdrop-blur-sm"
-                  }`}
-                >
-                  {msg.photoUrl && (
-                    <div className="mb-2.5 rounded-xl overflow-hidden border border-white/20 max-w-xs">
-                      <img
-                        src={msg.photoUrl}
-                        alt="Captura técnica de campo"
-                        className="w-full h-auto max-h-56 object-cover"
-                      />
-                    </div>
-                  )}
+          {/* Atajos Rápidos a la Wiki */}
+          <div className="p-2 bg-slate-950 border-b border-slate-800 flex gap-2 overflow-x-auto text-xs no-scrollbar">
+            {[
+              "ONT Bridge VLAN 100",
+              "Protocolo < -27 dBm",
+              "Promesa de Pago",
+              "Limpieza SC/APC",
+            ].map((kw) => (
+              <button
+                key={kw}
+                onClick={() => handleSendCopilot(`Procedimiento para: ${kw}`)}
+                className="whitespace-nowrap px-3 py-1 rounded-lg bg-slate-800 text-cyan-300 font-semibold border border-slate-700 active:scale-95 text-[11px]"
+              >
+                {kw}
+              </button>
+            ))}
+          </div>
 
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                </div>
-
-                {msg.technicalPayload && (
-                  <div className="rounded-xl border border-cyan-500/30 bg-slate-900/95 p-3 text-xs shadow-lg backdrop-blur space-y-2 max-w-sm">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-1.5">
-                      <span className="font-bold text-white text-[11px]">
-                        {msg.technicalPayload.titulo}
-                      </span>
-                      {msg.technicalPayload.subtitulo && (
-                        <span className="text-[10px] text-slate-400">
-                          {msg.technicalPayload.subtitulo}
-                        </span>
-                      )}
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      {msg.technicalPayload.datos.map((item, idx) => (
-                        <div key={idx} className="bg-slate-950/60 p-2 rounded-lg border border-slate-800/80">
-                          <span className="block text-slate-400 uppercase tracking-wider text-[9px]">
-                            {item.label}
-                          </span>
-                          <span
-                            className={`font-semibold ${
-                              item.critico
-                                ? "text-rose-400"
-                                : item.alerta
-                                ? "text-amber-400"
-                                : "text-emerald-400"
-                            }`}
-                          >
-                            {item.valor}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+          {/* Historial de Chat */}
+          <div className="flex-1 p-3.5 overflow-y-auto space-y-3">
+            {copilotMessages.map((m, i) => (
+              <div key={i} className={`flex gap-2.5 ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                {m.role === "assistant" && (
+                  <div className="h-7 w-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="h-4 w-4" />
                   </div>
                 )}
+                <div
+                  className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed whitespace-pre-wrap ${
+                    m.role === "user"
+                      ? "bg-cyan-600 text-white rounded-tr-none font-medium"
+                      : "bg-slate-800/90 text-slate-200 rounded-tl-none border border-slate-700/80 font-mono text-[11px]"
+                  }`}
+                >
+                  {m.content}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            ))}
+            {isCopilotLoading && (
+              <div className="flex items-center gap-2 text-cyan-400 text-xs font-mono p-2">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Consultando Wiki Técnica (isp_knowledge)...</span>
+              </div>
+            )}
+            <div ref={copilotEndRef} />
+          </div>
 
-        {isSending && (
-          <div className="flex gap-3 max-w-[80%] mr-auto items-center animate-in fade-in">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-cyan-400">
-              <Bot className="h-4 w-4 animate-spin" />
-            </div>
-            <div className="rounded-2xl bg-slate-900/90 border border-slate-800 px-4 py-2.5 text-xs text-slate-400 rounded-tl-none flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              <span>Caralita auditando telemetría óptica y visión de campo...</span>
+          {/* Formulario Consulta Copilot con soporte Canvas */}
+          <div className="p-3 border-t border-slate-800 bg-slate-950 space-y-2">
+            {isCompressing && (
+              <div className="text-[10px] text-cyan-400 font-mono flex items-center gap-1.5 animate-pulse">
+                <RefreshCw className="h-3 w-3 animate-spin" />
+                <span>Comprimiendo foto con Canvas (1280px / 60% JPEG)...</span>
+              </div>
+            )}
+            {attachedPhoto && (
+              <div className="flex items-center justify-between bg-slate-800 px-3 py-1 rounded-lg text-xs text-slate-300">
+                <span>Foto adjunta: {attachedPhoto.name}</span>
+                <button onClick={() => setAttachedPhoto(null)} className="text-rose-400">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="h-12 w-12 rounded-xl bg-slate-800 text-slate-300 hover:text-white border border-slate-700 flex items-center justify-center shrink-0"
+                title="Adjuntar foto de campo"
+              >
+                <Camera className="h-5 w-5" />
+              </button>
+              <input
+                type="text"
+                value={copilotInput}
+                onChange={(e) => setCopilotInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendCopilot()}
+                placeholder="Pregunta a Caralita sobre un procedimiento..."
+                className="flex-1 h-12 rounded-xl bg-slate-900 border border-slate-800 px-3.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+              />
+              <button
+                onClick={() => handleSendCopilot()}
+                disabled={(!copilotInput.trim() && !compressedPhotoUrl) || isCopilotLoading}
+                className="h-12 w-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white flex items-center justify-center shrink-0 disabled:opacity-40"
+              >
+                <Send className="h-5 w-5" />
+              </button>
             </div>
           </div>
-        )}
-
-        {chatError && (
-          <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-rose-400 shrink-0" />
-            <span>{chatError}</span>
-          </div>
-        )}
-
-        <div ref={messagesEndRef} />
-      </main>
-
-      {/* Vista previa de foto adjunta lista para enviar */}
-      {photoPreview && (
-        <div className="px-4 py-2 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <img
-              src={photoPreview}
-              alt="Preview"
-              className="h-12 w-12 rounded-lg object-cover border border-cyan-500/50"
-            />
-            <div className="text-xs">
-              <span className="font-semibold text-white block">Foto lista para auditoría</span>
-              <span className="text-[10px] text-slate-400 font-mono">
-                {attachedPhoto?.name} ({(Number(attachedPhoto?.size || 0) / 1024).toFixed(1)} KB)
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              setAttachedPhoto(null);
-              if (fileInputRef.current) fileInputRef.current.value = "";
-            }}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
-            title="Quitar foto"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
       )}
 
-      {/* Barra Inferior Fija para Input y Cámara */}
-      <footer className="p-3 bg-slate-900/95 border-t border-slate-800 backdrop-blur-md shrink-0 space-y-2">
-        {isCompressing && (
-          <div className="flex items-center gap-2 text-[11px] text-cyan-400 font-mono py-0.5 animate-pulse">
-            <RefreshCw className="h-3 w-3 animate-spin" />
-            <span>Comprimiendo imagen con HTML5 Canvas (max 1280px / 60% JPEG)...</span>
-          </div>
-        )}
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isCompressing}
-            className={`p-2.5 rounded-xl border transition shadow-sm ${
-              attachedPhoto
-                ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/50"
-                : "bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
-            }`}
-            title="Tomar o adjuntar foto técnica de la instalación (Compresión Canvas)"
-          >
-            <Camera className="h-5 w-5" />
-          </button>
-
-          <input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder={
-              attachedPhoto
-                ? "Describe la imagen o envía directo..."
-                : "Consultar NAP, abonado o falla técnica..."
-            }
-            className="flex-1 rounded-xl border border-slate-800 bg-slate-950/80 px-3.5 py-2.5 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
-          />
-
-          <button
-            type="submit"
-            disabled={(!inputMessage.trim() && !attachedPhoto) || isSending}
-            className="p-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-md shadow-cyan-500/25 transition"
-            title="Enviar reporte a Caralita"
-          >
-            <Send className="h-5 w-5" />
-          </button>
-        </form>
-
-        {/* Tarea 2: Branding y Firma Global en PWA */}
-        <div className="text-center text-[10px] text-zinc-500 truncate pt-1 border-t border-slate-800/60">
-          Desarrollado por: <strong className="text-zinc-400">Nexora One</strong> | Soporte:{" "}
-          <a href="tel:3786414533" className="hover:text-cyan-400 text-zinc-400 font-mono">
-            3786414533
-          </a>{" "}
-          | Email:{" "}
-          <a
-            href="mailto:nexoraone@nexativanews.com.ar"
-            className="hover:text-cyan-400 text-zinc-400 font-mono"
-          >
-            nexoraone@nexativanews.com.ar
-          </a>
-        </div>
+      {/* Footer Branding Nexora One */}
+      <footer className="fixed bottom-0 inset-x-0 bg-slate-950/95 border-t border-slate-800/80 p-2 text-center text-[10px] text-zinc-500 z-20">
+        Desarrollado por: <strong className="text-zinc-400">Nexora One</strong> | Soporte:{" "}
+        <a href="tel:3786414533" className="text-zinc-400 font-mono hover:text-cyan-400">
+          3786414533
+        </a>{" "}
+        | Email:{" "}
+        <a href="mailto:nexoraone@nexativanews.com.ar" className="text-zinc-400 font-mono hover:text-cyan-400">
+          nexoraone@nexativanews.com.ar
+        </a>
       </footer>
     </div>
   );
 }
 
-export default function TecnicoPWAUI() {
+export default function TecnicoPWAPage() {
   return (
     <Suspense
       fallback={
-        <div className="h-screen w-full bg-slate-950 flex items-center justify-center text-cyan-400 text-xs">
-          Cargando PWA Técnicos Carale...
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-cyan-400 font-mono text-xs">
+          Cargando PWA Trinchera...
         </div>
       }
     >
-      <TecnicoPWAInner />
+      <TecnicoPWATrincheraInner />
     </Suspense>
   );
 }
