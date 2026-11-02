@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { cleanMessageText } from "@/lib/utils";
 import {
   MessageSquare,
   X,
@@ -460,7 +461,7 @@ export default function WhatsAppInboxModal({
                                 })}
                               </span>
                             </div>
-                            <p>{m.content}</p>
+                            <p>{cleanMessageText(m.content)}</p>
                           </div>
 
                           {!isCustomer && (

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { cleanMessageText } from "@/lib/utils";
 import {
   Sparkles,
   X,
@@ -31,8 +32,7 @@ export default function NoraCopilot({ isOpen, onClose }: NoraCopilotProps) {
   const [messages, setMessages] = useState<CopilotMessage[]>([
     {
       role: "assistant",
-      content:
-        "Hola, soy **Nora**, tu Copilot operativo del NOC en Carale Internet. Estoy a tu disposición para asistirte en el manejo de la consola, rastreo de cuadrillas, validación de accesos seguros y entrenamiento del modelo con documentación técnica.",
+      content: "Hola, soy Nora. ¿En qué tarea operativa o reporte del NOC te asisto hoy?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -222,7 +222,7 @@ export default function NoraCopilot({ isOpen, onClose }: NoraCopilotProps) {
                       : "bg-slate-800/90 border border-slate-700/70 text-slate-200 rounded-tl-none whitespace-pre-wrap"
                   }`}
                 >
-                  {m.content}
+                  {cleanMessageText(m.content)}
                 </div>
               </div>
             );

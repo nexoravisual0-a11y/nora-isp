@@ -43,6 +43,7 @@ import {
   MensajeInterno,
 } from "@/actions/ispcube-actions";
 import NexoraBadge from "@/components/ui/NexoraBadge";
+import { cleanMessageText } from "@/lib/utils";
 
 /**
  * Compresión nativa de imágenes en cliente con HTML5 Canvas (max 1280px / 60% JPEG)
@@ -804,10 +805,7 @@ function TecnicoPWATrincheraInner() {
                       : "bg-slate-800/95 text-slate-100 rounded-tl-none border border-slate-700/80 font-normal shadow-sm"
                   }`}
                 >
-                  {m.content
-                    .replace(/\*\*(.*?)\*\*/g, "$1")
-                    .replace(/^#+\s+/gm, "")
-                    .replace(/`{1,3}([^`]+)`{1,3}/g, "$1")}
+                  {cleanMessageText(m.content)}
                 </div>
               </div>
             ))}
