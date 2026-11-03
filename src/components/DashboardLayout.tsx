@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo y Branding CARALE by Nora */}
           <div className="h-16 px-5 flex items-center border-b border-slate-800/80 gap-3 bg-slate-950/40">
             <div className="flex items-center justify-center shrink-0">
-              <CaraleLogo className="h-7 w-7 object-contain drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
+              <CaraleLogo className="h-7 w-7 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
