@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { cleanMessageText } from "@/lib/utils";
 import FiberShaderCanvas from "@/components/FiberShaderCanvas";
+import { CaraleBrand } from "@/components/ui/CaraleLogo";
 import {
   Wifi,
   Building2,
@@ -314,21 +315,8 @@ export default function CaraleCorporativaUI() {
       {/* 1. Navbar Institucional Premium */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link href="/portal" className="flex items-center gap-3 group">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-cyan-500 via-teal-500 to-blue-600 font-black text-white text-xl shadow-lg shadow-cyan-500/30 group-hover:scale-105 transition-transform duration-200">
-              C
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-white text-lg">CARALE</span>
-                <span className="text-[10px] font-bold text-cyan-400 bg-cyan-950/90 px-2 py-0.5 rounded-full border border-cyan-800/60 uppercase tracking-wider">
-                  Fibra Pura
-                </span>
-              </div>
-              <span className="block text-[11px] font-medium text-slate-400">
-                Telecomunicaciones & Datos
-              </span>
-            </div>
+          <Link href="/portal">
+            <CaraleBrand />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">

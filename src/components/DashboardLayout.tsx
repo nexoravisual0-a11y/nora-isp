@@ -28,6 +28,7 @@ import NoraCopilot from "@/components/NoraCopilot";
 import NexoraBadge from "@/components/ui/NexoraBadge";
 import AdminCommercialPlansModal from "@/components/AdminCommercialPlansModal";
 import WhatsAppInboxModal from "@/components/WhatsAppInboxModal";
+import { CaraleLogo } from "@/components/ui/CaraleLogo";
 
 interface SidebarLink {
   name: string;
@@ -98,8 +99,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div>
           {/* Logo y Branding CARALE by Nora */}
           <div className="h-16 px-5 flex items-center border-b border-slate-800/80 gap-3 bg-slate-950/40">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-500 via-teal-500 to-blue-600 font-black text-white shadow-lg shadow-cyan-500/25">
-              C
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-cyan-950 via-slate-900 to-blue-950 border border-cyan-500/30 p-1 shadow-lg shadow-cyan-500/20 shrink-0">
+              <CaraleLogo className="h-7 w-7 text-cyan-400" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
