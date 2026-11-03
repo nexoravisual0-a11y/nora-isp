@@ -23,7 +23,7 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
   }, [isOpen]);
 
   const qrImageUrl =
-    "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=https://nexora-one.vercel.app";
+    "https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=https://nexora-store-app.vercel.app";
 
   return (
     <>
@@ -102,7 +102,7 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
             {/* Botón de Acción Ancho Completo */}
             <div className="pt-2 border-t border-neutral-800 space-y-2">
               <a
-                href="/store"
+                href="https://nexora-store-app.vercel.app"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-full py-2.5 px-4 bg-cyan-500 hover:bg-cyan-400 text-black font-semibold rounded-xl text-xs tracking-wide transition-all shadow-lg shadow-cyan-500/20 active:scale-[0.98] flex items-center justify-center gap-2"

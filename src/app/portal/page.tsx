@@ -26,6 +26,8 @@ import {
   Clock,
   Layers,
   ChevronDown,
+  QrCode,
+  ExternalLink,
 } from "lucide-react";
 
 interface CommercialPlanData {
@@ -192,6 +194,7 @@ export default function CaraleCorporativaUI() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
+  const [showNexoraQrModal, setShowNexoraQrModal] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -694,8 +697,8 @@ export default function CaraleCorporativaUI() {
         </div>
       </RevealSection>
 
-      {/* 5. Tarea 2: Footer Corporativo con Firma Oficial Exacta y Resguardo de Padding */}
-      <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-12 pb-24 md:pb-12 px-4 sm:px-6 lg:px-8 text-xs text-slate-400">
+      {/* 5. Footer Corporativo Institucional con Firma de Captación Nexora One (Glassmorphism & Dark Mode) */}
+      <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950/90 backdrop-blur-md py-12 pb-24 md:pb-12 px-4 sm:px-6 lg:px-8 text-xs text-slate-400">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left pr-0 md:pr-48">
           <div className="space-y-1">
             <div className="flex items-center justify-center md:justify-start gap-2">
@@ -709,21 +712,55 @@ export default function CaraleCorporativaUI() {
             </p>
           </div>
 
-          {/* Firma exacta global */}
-          <div className="text-zinc-400 text-center md:text-left text-[11px] leading-relaxed">
-            <div>
-              Desarrollado por: <strong className="text-slate-200">Nexora One</strong> | Soporte:{" "}
-              <a href="tel:3786414533" className="text-cyan-400 hover:underline font-mono">
-                3786414533
-              </a>{" "}
-              | Email:{" "}
-              <a
-                href="mailto:nexoraone@nexativanews.com.ar"
-                className="text-cyan-400 hover:underline font-mono"
-              >
-                nexoraone@nexativanews.com.ar
-              </a>
+          {/* Firma institucional de captación comercial con diseño premium en glassmorphism */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 sm:px-4 sm:py-2.5 backdrop-blur-xl shadow-lg">
+            <div className="flex items-center gap-2 text-[11px] text-slate-300">
+              <Sparkles className="h-4 w-4 text-cyan-400 shrink-0" />
+              <span>Infraestructura & Software impulsado por <strong className="text-white font-semibold">Nexora One</strong></span>
             </div>
+
+            <div className="flex items-center gap-2">
+              <a
+                href="https://nexora-store-app.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 hover:text-cyan-200 border border-cyan-500/30 hover:border-cyan-400/60 font-semibold text-[11px] transition-all shadow-sm active:scale-95 group"
+                title="Conocer plataforma y soluciones de Nexora One"
+              >
+                <span>Conocer Nexora One</span>
+                <span className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">↗</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setShowNexoraQrModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 font-semibold text-[11px] transition-all shadow-sm active:scale-95"
+                title="Escanear QR de Soluciones Nexora One"
+              >
+                <QrCode className="h-3.5 w-3.5 text-cyan-400" />
+                <span>Escanear QR de Soluciones</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Sub-créditos y canales de soporte directo */}
+        <div className="max-w-7xl mx-auto mt-6 pt-4 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-[10px] text-slate-500 gap-2 pr-0 md:pr-48">
+          <div>
+            Nora ISP Ecosystem • Todos los derechos reservados
+          </div>
+          <div>
+            Soporte:{" "}
+            <a href="tel:3786414533" className="text-cyan-400/80 hover:text-cyan-300 transition font-mono">
+              3786414533
+            </a>{" "}
+            | Email:{" "}
+            <a
+              href="mailto:nexoraone@nexativanews.com.ar"
+              className="text-cyan-400/80 hover:text-cyan-300 transition font-mono"
+            >
+              nexoraone@nexativanews.com.ar
+            </a>
           </div>
         </div>
       </footer>
@@ -969,6 +1006,83 @@ export default function CaraleCorporativaUI() {
           </div>
         )}
       </div>
+
+      {/* Modal Minimalista de Código QR de Soluciones Nexora One */}
+      {showNexoraQrModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="nexora-qr-modal-title"
+          onClick={() => setShowNexoraQrModal(false)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-slate-900 border border-cyan-500/30 rounded-3xl max-w-sm w-full mx-auto p-6 text-center space-y-4 shadow-2xl shadow-cyan-950/50 text-slate-100 backdrop-blur-xl"
+          >
+            {/* Botón Cerrar */}
+            <button
+              type="button"
+              onClick={() => setShowNexoraQrModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition"
+              aria-label="Cerrar modal"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Icono Badge */}
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shadow-inner">
+              <Sparkles className="h-6 w-6 text-cyan-400" />
+            </div>
+
+            {/* Encabezado */}
+            <div>
+              <h3 id="nexora-qr-modal-title" className="text-base sm:text-lg font-bold text-white tracking-tight">
+                Nexora One Store & Soluciones
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Escanea el código QR desde tu celular para explorar nuestra suite SaaS, motores de IA y arquitectura cloud para ISPs.
+              </p>
+            </div>
+
+            {/* Contenedor del Código QR */}
+            <div className="bg-white p-3.5 rounded-2xl inline-flex items-center justify-center shadow-xl mx-auto border-4 border-slate-800">
+              <img
+                src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=https://nexora-store-app.vercel.app"
+                alt="Código QR Nexora One"
+                width={180}
+                height={180}
+                className="w-44 h-44 object-contain mx-auto"
+              />
+            </div>
+
+            <div className="text-[11px] font-mono text-cyan-400 font-semibold flex items-center justify-center gap-1.5">
+              <span>nexora-store-app.vercel.app</span>
+            </div>
+
+            {/* Acciones */}
+            <div className="pt-2 border-t border-slate-800/80 space-y-2">
+              <a
+                href="https://nexora-store-app.vercel.app"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold rounded-xl text-xs tracking-wide transition-all shadow-lg shadow-cyan-500/20 active:scale-[0.98] flex items-center justify-center gap-2"
+              >
+                <span>Ingresar a la Tienda SaaS</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setShowNexoraQrModal(false)}
+                className="w-full py-2 rounded-xl bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs font-medium active:scale-95 transition"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
