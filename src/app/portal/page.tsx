@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { cleanMessageText } from "@/lib/utils";
+import FiberShaderCanvas from "@/components/FiberShaderCanvas";
 import {
   Wifi,
   Building2,
@@ -412,78 +413,25 @@ export default function CaraleCorporativaUI() {
         </div>
       </header>
 
-      {/* 2. Hero Section de Telecomunicaciones Avanzado (Alineación Inmediata Sin Scroll) */}
+      {/* 2. Hero Section de Telecomunicaciones Avanzado (Shader WebGL Carrier-Grade en Tiempo Real) */}
       <RevealSection className="relative z-10 pt-10 pb-16 md:pt-16 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        {/* Capa de Fondo Tecnológico del Hero con SVG de Fibra Óptica Luminoso y Nítido */}
-        <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
-          {/* Gradiente radial principal de telecomunicaciones */}
-          <div className="absolute w-[850px] h-[600px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-500/35 via-blue-900/25 to-transparent blur-[100px] -top-16 left-1/2 -translate-x-1/2" />
-          {/* Núcleo de resplandor óptico centrado detrás del título para volumen 3D */}
-          <div className="absolute w-[500px] h-[260px] bg-cyan-400/30 blur-[75px] rounded-full -top-4 left-1/2 -translate-x-1/2" />
-          
-          {/* SVG enriquecido a pantalla completa con trazos luminosos nítidos en cian, celeste y azul */}
-          <svg
-            className="absolute inset-0 w-full h-full opacity-90 [mask-image:radial-gradient(ellipse_at_center,white_60%,transparent_95%)]"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 1440 900"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <linearGradient id="fiberGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#06b6d4" stopOpacity="1" />
-                <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#2563eb" stopOpacity="0.7" />
-              </linearGradient>
-              <linearGradient id="fiberGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#38bdf8" stopOpacity="1" />
-                <stop offset="60%" stopColor="#06b6d4" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.6" />
-              </linearGradient>
-              <linearGradient id="pulseGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.2" />
-                <stop offset="50%" stopColor="#67e8f9" stopOpacity="1" />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
-              </linearGradient>
-              <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                <feMerge>
-                  <feMergeNode in="coloredBlur"/>
-                  <feMergeNode in="SourceGraphic"/>
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Haces de fibra óptica troncales con curvas, resplandores nítidos y diagonales de datos */}
-            <path d="M-100,180 C300,80 600,360 1540,130" stroke="#06b6d4" strokeWidth="3" fill="none" filter="url(#neonGlow)" />
-            <path d="M-50,260 C350,160 750,430 1500,240" stroke="#38bdf8" strokeWidth="2.5" fill="none" strokeDasharray="8 5" filter="url(#neonGlow)" />
-            <path d="M0,430 C400,300 850,530 1600,360" stroke="#3b82f6" strokeWidth="2" fill="none" filter="url(#neonGlow)" />
-            <path d="M-150,580 C320,460 920,600 1550,480" stroke="url(#fiberGrad2)" strokeWidth="2" fill="none" />
-            <path d="M100,-50 L1340,950" stroke="url(#pulseGlow)" strokeWidth="2" strokeOpacity="0.6" filter="url(#neonGlow)" />
-            <path d="M1340,-50 L100,950" stroke="#06b6d4" strokeWidth="1.75" strokeOpacity="0.5" />
-
-            {/* Pulsos de fotones / nodos de luz de datos vivos */}
-            <circle cx="480" cy="245" r="5" fill="#67e8f9" className="animate-pulse" filter="url(#neonGlow)" />
-            <circle cx="820" cy="420" r="4.5" fill="#38bdf8" className="animate-ping" filter="url(#neonGlow)" />
-            <circle cx="1120" cy="210" r="5" fill="#22d3ee" filter="url(#neonGlow)" />
-            <circle cx="280" cy="510" r="4" fill="#60a5fa" />
-          </svg>
-
-          {/* Malla tecnológica / grid de fibra óptica sutil */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#06b6d420_1px,transparent_1px),linear-gradient(to_bottom,#06b6d420_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_at_center,white_40%,transparent_80%)] opacity-80" />
+        {/* Capa de Fondo WebGL Interactivo con Canvas de Filamentos Ópticos */}
+        <div className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-hidden">
+          <FiberShaderCanvas />
         </div>
 
-        <div className="text-center max-w-5xl mx-auto space-y-4 relative">
+        <div className="text-center max-w-5xl mx-auto space-y-4 relative z-10">
           {/* Badge Superior Tecnológico con Pulso Neón */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900/90 border border-cyan-500/50 text-[11px] font-semibold text-cyan-300 shadow-md shadow-cyan-500/20 backdrop-blur-md">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
             </span>
-            <span className="tracking-wide">Infraestructura FTTH & Carrier-Grade Cloud Core en Argentina</span>
+            <span className="tracking-wide">Infraestructura FTTH & Tránsito Directo CABASE</span>
           </div>
 
-          {/* Título Reducido en Escala Vertical */}
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.12]">
+          {/* Título Principal con Escala Equilibrada Carrier-Grade */}
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white leading-[1.12]">
             La red de fibra óptica{" "}
             <span className="relative whitespace-nowrap">
               <span className="bg-gradient-to-r from-cyan-300 via-teal-300 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(6,182,212,0.5)]">
@@ -499,7 +447,7 @@ export default function CaraleCorporativaUI() {
             transporte mayorista directo a los principales puntos de intercambio de tráfico de Argentina.
           </p>
 
-          {/* Reordenamiento Inmediato: Botones Principales Ubicados Arriba */}
+          {/* Botones de Acción Funcionales */}
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               onClick={() => {
@@ -516,7 +464,7 @@ export default function CaraleCorporativaUI() {
                 setIsChatOpen(true);
                 setInputMessage("Hola Caralita, quiero consultar la factibilidad técnica y test de cobertura inmediata en mi domicilio.");
               }}
-              className="border border-cyan-400/40 bg-slate-900/60 text-cyan-200 px-6 py-3 rounded-xl hover:bg-slate-800 transition-all text-sm font-semibold flex items-center gap-2 active:scale-95 shadow-md"
+              className="border border-cyan-400/40 bg-slate-900/60 text-cyan-200 px-6 py-3 rounded-xl hover:bg-slate-800 transition-all text-sm font-semibold flex items-center gap-2 active:scale-95 shadow-md backdrop-blur-sm"
             >
               <Zap className="h-4 w-4 text-cyan-400" />
               <span>Test de Cobertura</span>
@@ -524,7 +472,7 @@ export default function CaraleCorporativaUI() {
             </button>
           </div>
 
-          {/* Tarjeta Protagónica de Caralita en el Centro Visual */}
+          {/* Widget Central Protagónico de Caralita con Avatar Oficial */}
           <div className="bg-slate-900/90 border border-cyan-400/40 rounded-2xl p-3 max-w-md mx-auto mt-4 flex items-center justify-between gap-3 shadow-xl backdrop-blur-md text-left">
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
@@ -542,7 +490,7 @@ export default function CaraleCorporativaUI() {
                   <span className="font-bold text-white text-xs truncate">Caralita</span>
                   <span className="inline-flex items-center gap-1 text-[9px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    En vivo
+                    En línea
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-300 leading-tight line-clamp-1">
@@ -562,7 +510,7 @@ export default function CaraleCorporativaUI() {
             </button>
           </div>
 
-          {/* 3 Píldoras Interactivas Flotantes Glassmorphism */}
+          {/* 3 Tarjetas de Métricas Glassmorphism Flotantes */}
           <div className="flex flex-wrap items-center justify-center gap-2.5 pt-3">
             <div className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400/60 backdrop-blur-xl shadow-md transition-all hover:scale-[1.02]">
               <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse" />
