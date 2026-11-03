@@ -60,7 +60,7 @@ export function CaraleBrand() {
   return (
     <div className="flex items-center gap-3 group cursor-pointer">
       <div className="relative flex items-center justify-center p-1.5 rounded-xl bg-slate-900/60 border border-cyan-500/20 group-hover:border-cyan-400/50 transition-all duration-300">
-        <CaraleLogo className="h-8 w-8 text-cyan-400 drop-shadow-[0_0_10px_rgba(6,182,212,0.4)]" />
+        <CaraleLogo className="h-8 w-8 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.25)]" />
       </div>
       <div className="flex flex-col">
         <span className="font-bold tracking-wider text-white text-lg leading-tight group-hover:text-cyan-300 transition-colors">
