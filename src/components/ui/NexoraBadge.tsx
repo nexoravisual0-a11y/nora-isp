@@ -27,7 +27,7 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
 
   return (
     <>
-      {/* Botón / Badge Discreto */}
+      {/* Boton / Badge Discreto */}
       <div className={`inline-flex items-center gap-1.5 text-[10px] text-zinc-400 font-sans ${className}`}>
         <span>Desarrollado por:</span>
         <button
@@ -38,7 +38,7 @@ export default function NexoraBadge({ variant = "inline", className = "" }: Nexo
         >
           <strong className="text-zinc-200 group-hover:text-cyan-200">Nexora One</strong>
           <span className="text-slate-500">|</span>
-          <span className="flex items-center gap-0.5 text-cyan-400 font-mono text-[9px] uppercase tracking-wider">
+          <span className="flex items-center gap-1 text-cyan-400 font-mono text-[9px] uppercase tracking-wider">
             <QrCode className="h-3 w-3" />
             <span>QR</span>
           </span>

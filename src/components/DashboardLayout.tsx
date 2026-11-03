@@ -236,36 +236,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Área Central / Contenido Principal */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Bar con Buscador Global y Estado */}
-        <header className="h-16 border-b border-slate-800 bg-slate-900/80 px-6 flex items-center justify-between backdrop-blur shrink-0">
-          {/* Buscador global con atajo visual */}
-          <div className="relative w-80 md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              placeholder="Buscar cliente, IP, MAC, ONU o caja NAP..."
-              className="w-full rounded-xl border border-slate-800 bg-slate-950/70 py-2 pl-9 pr-12 text-xs text-slate-200 placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
-            />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5 text-[10px] text-slate-500 font-mono bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/60">
-              <span>⌘</span>K
+        {/* Top Bar con Acciones Rápidas del NOC y Estado */}
+        <header className="h-16 border-b border-slate-800 bg-slate-900/80 px-4 w-full max-w-full flex items-center justify-between gap-2 overflow-hidden backdrop-blur shrink-0">
+          {/* Lado Izquierdo: Estado de Red Central */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-semibold shadow-sm">
+              <Database className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Core Sincronizado</span>
+              <span className="sm:hidden">Core OK</span>
             </div>
           </div>
 
-          {/* Estado de Red y Perfil de Operador */}
-          <div className="flex items-center gap-4">
-            {/* Pill de Base de Datos */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold">
-              <Database className="h-3.5 w-3.5" />
-              <span>Core Sincronizado</span>
-            </div>
-
+          {/* Acciones Centrales y Perfil de Operador */}
+          <div className="flex items-center gap-2 sm:gap-2.5 overflow-x-auto no-scrollbar py-1">
             {/* Botón Mesa de Entrada / WhatsApp */}
             <button
               onClick={() => setShowInboxModal(true)}
-              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-sm transition ${
+              className={`relative flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-semibold shadow-sm transition shrink-0 ${
                 unreadHandoffCount > 0
                   ? "bg-rose-500/15 border-rose-500/50 text-rose-300 hover:bg-rose-500/25"
                   : "bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/40 hover:text-white"
@@ -273,7 +260,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               title="Mesa de Entrada Unificada (WhatsApp con Human Handoff)"
             >
               <MessageSquare className={`h-3.5 w-3.5 ${unreadHandoffCount > 0 ? "text-rose-400" : "text-emerald-400"}`} />
-              <span className="hidden sm:inline">Mesa de Entrada / WhatsApp</span>
+              <span className="hidden md:inline">Mesa de Entrada</span>
               {unreadHandoffCount > 0 && (
                 <span className="flex h-4 min-w-4 px-1 items-center justify-center rounded-full bg-rose-500 text-white font-extrabold text-[9px] animate-pulse">
                   {unreadHandoffCount}
@@ -284,27 +271,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Botón Gestión Planes Comerciales */}
             <button
               onClick={() => setShowPlansModal(true)}
-              className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/40 hover:bg-cyan-900/40 text-xs font-semibold text-cyan-300 hover:text-white shadow-sm transition"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-cyan-500/40 bg-cyan-950/40 hover:bg-cyan-900/40 text-xs font-semibold text-cyan-300 hover:text-white shadow-sm transition shrink-0"
               title="Administrar Planes Comerciales de /portal"
             >
               <Tag className="h-3.5 w-3.5 text-cyan-400" />
-              <span>Planes Comerciales</span>
+              <span className="hidden xl:inline">Planes Comerciales</span>
+              <span className="xl:hidden hidden md:inline">Planes</span>
             </button>
 
             {/* Botón Guía y Protocolos UAT */}
             <Link
               href="/guia"
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-800 text-xs font-semibold text-neutral-200 hover:text-cyan-300 shadow-sm transition"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-800 text-xs font-semibold text-neutral-200 hover:text-cyan-300 shadow-sm transition shrink-0"
               title="Guía Operativa Oficial y Protocolos UAT"
             >
               <BookOpen className="h-3.5 w-3.5 text-cyan-400" />
-              <span>Guía y Protocolos</span>
+              <span className="hidden lg:inline">Guía</span>
             </Link>
 
             {/* Botón Nora Copilot (Drawer Asistente NOC) */}
             <button
               onClick={() => setShowCopilot(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-gradient-to-r from-indigo-500/20 via-purple-500/15 to-cyan-500/20 hover:from-indigo-500/30 hover:to-cyan-500/30 text-xs font-bold text-indigo-300 hover:text-white shadow-md shadow-indigo-500/15 transition-all"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-indigo-500/40 bg-gradient-to-r from-indigo-500/20 via-purple-500/15 to-cyan-500/20 hover:from-indigo-500/30 hover:to-cyan-500/30 text-xs font-bold text-indigo-300 hover:text-white shadow-md shadow-indigo-500/15 transition-all shrink-0"
               title="Abrir Nora Copilot - Asistente Operativo del NOC"
             >
               <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
@@ -314,41 +302,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Botón Compartir Portal (QR) */}
             <button
               onClick={() => setShowQrModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-cyan-300 shadow-sm transition"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-slate-700/80 bg-slate-800/70 hover:bg-slate-800 text-xs font-semibold text-slate-200 hover:text-cyan-300 shadow-sm transition shrink-0"
               title="Código QR para acceso de clientes al Portal"
             >
               <QrCode className="h-3.5 w-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Compartir Portal (QR)</span>
+              <span className="hidden 2xl:inline">Compartir Portal</span>
+              <span className="2xl:hidden hidden sm:inline">Portal QR</span>
             </button>
 
             {/* Botón QR Acceso Cuadrilla 1 (Uso Interno) */}
             <button
               onClick={() => setShowTechQrModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-xs font-semibold text-rose-300 hover:text-white shadow-sm transition"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/25 text-xs font-semibold text-rose-300 hover:text-white shadow-sm transition shrink-0"
               title="Código QR de autenticación e identidad para Cuadrilla 1"
             >
               <ShieldAlert className="h-3.5 w-3.5 text-rose-400" />
-              <span className="hidden sm:inline">QR Acceso Cuadrilla 1</span>
+              <span className="hidden xl:inline">QR Cuadrilla 1</span>
+              <span className="xl:hidden hidden sm:inline">Cuadrilla 1</span>
             </button>
 
-            {/* Notificaciones */}
-            <button
-              onClick={() => setShowNotification(!showNotification)}
-              className="relative p-2 rounded-xl border border-slate-800 bg-slate-800/50 hover:bg-slate-800 text-slate-300 transition"
-              title="Notificaciones del NOC"
-            >
-              <Bell className="h-4 w-4 text-slate-300" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-slate-900" />
-            </button>
-
-            {/* Perfil Admin CARALE */}
-            <div className="flex items-center gap-3 pl-3 border-l border-slate-800">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center font-bold text-xs text-white shadow-md shadow-cyan-900/30">
+            {/* Perfil Admin CARALE (Holgado y 100% Visible) */}
+            <div className="flex items-center gap-2.5 pl-2 sm:pl-3 border-l border-slate-800 shrink-0">
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-600 flex items-center justify-center font-bold text-xs text-white shadow-md shadow-cyan-900/30 shrink-0">
                 CR
               </div>
               <div className="hidden sm:block text-left">
-                <span className="block text-xs font-bold text-slate-200">Admin CARALE</span>
-                <span className="block text-[10px] text-slate-400">NOC & Soporte N3</span>
+                <span className="block text-xs font-bold text-slate-200 whitespace-nowrap">Admin CARALE</span>
+                <span className="block text-[10px] text-slate-400 whitespace-nowrap">NOC & Soporte</span>
               </div>
             </div>
           </div>

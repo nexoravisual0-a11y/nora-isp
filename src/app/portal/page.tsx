@@ -412,77 +412,81 @@ export default function CaraleCorporativaUI() {
         </div>
       </header>
 
-      {/* 2. Hero Section de Telecomunicaciones Avanzado */}
-      <RevealSection className="relative z-10 pt-16 pb-20 md:pt-28 md:pb-32 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        {/* Capa de Fondo Tecnológico del Hero con Radial Gradients, Resplandor, SVG de Fibra Óptica y Grid Pattern */}
+      {/* 2. Hero Section de Telecomunicaciones Avanzado (Alineación Inmediata Sin Scroll) */}
+      <RevealSection className="relative z-10 pt-10 pb-16 md:pt-16 md:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        {/* Capa de Fondo Tecnológico del Hero con SVG de Fibra Óptica Luminoso y Nítido */}
         <div className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
           {/* Gradiente radial principal de telecomunicaciones */}
-          <div className="absolute w-[800px] h-[550px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-600/25 via-blue-900/15 to-transparent blur-[110px] -top-20 left-1/2 -translate-x-1/2" />
+          <div className="absolute w-[850px] h-[600px] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-500/35 via-blue-900/25 to-transparent blur-[100px] -top-16 left-1/2 -translate-x-1/2" />
           {/* Núcleo de resplandor óptico centrado detrás del título para volumen 3D */}
-          <div className="absolute w-[480px] h-[240px] bg-cyan-400/20 blur-[85px] rounded-full -top-6 left-1/2 -translate-x-1/2 transform -rotate-3" />
+          <div className="absolute w-[500px] h-[260px] bg-cyan-400/30 blur-[75px] rounded-full -top-4 left-1/2 -translate-x-1/2" />
           
-          {/* SVG enriquecido a pantalla completa con haces de luz en perspectiva, líneas de datos diagonales y curvas en gradientes cian, celeste y azul */}
+          {/* SVG enriquecido a pantalla completa con trazos luminosos nítidos en cian, celeste y azul */}
           <svg
-            className="absolute inset-0 w-full h-full opacity-65 [mask-image:radial-gradient(ellipse_at_center,white_35%,transparent_80%)]"
+            className="absolute inset-0 w-full h-full opacity-90 [mask-image:radial-gradient(ellipse_at_center,white_60%,transparent_95%)]"
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 1440 900"
             preserveAspectRatio="none"
           >
             <defs>
               <linearGradient id="fiberGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.8" />
-                <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.4" />
-                <stop offset="100%" stopColor="#2563eb" stopOpacity="0.1" />
+                <stop offset="0%" stopColor="#06b6d4" stopOpacity="1" />
+                <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#2563eb" stopOpacity="0.7" />
               </linearGradient>
               <linearGradient id="fiberGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.7" />
-                <stop offset="60%" stopColor="#06b6d4" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0" />
+                <stop offset="0%" stopColor="#38bdf8" stopOpacity="1" />
+                <stop offset="60%" stopColor="#06b6d4" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.6" />
               </linearGradient>
               <linearGradient id="pulseGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#22d3ee" stopOpacity="0" />
+                <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.2" />
                 <stop offset="50%" stopColor="#67e8f9" stopOpacity="1" />
-                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
               </linearGradient>
+              <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
             </defs>
 
-            {/* Haces de fibra óptica troncales con curvas y diagonales de datos */}
-            <path d="M-100,200 C300,100 600,380 1540,150" stroke="url(#fiberGrad1)" strokeWidth="2.5" fill="none" />
-            <path d="M-50,280 C350,180 750,450 1500,260" stroke="url(#fiberGrad2)" strokeWidth="2" fill="none" strokeDasharray="6 4" />
-            <path d="M0,450 C400,320 850,550 1600,380" stroke="url(#fiberGrad1)" strokeWidth="1.75" fill="none" />
-            <path d="M-150,600 C320,480 920,620 1550,500" stroke="url(#fiberGrad2)" strokeWidth="1.5" fill="none" />
-            <path d="M100,-50 L1340,950" stroke="url(#pulseGlow)" strokeWidth="1.2" strokeOpacity="0.4" />
-            <path d="M1340,-50 L100,950" stroke="url(#fiberGrad1)" strokeWidth="1.2" strokeOpacity="0.3" />
+            {/* Haces de fibra óptica troncales con curvas, resplandores nítidos y diagonales de datos */}
+            <path d="M-100,180 C300,80 600,360 1540,130" stroke="#06b6d4" strokeWidth="3" fill="none" filter="url(#neonGlow)" />
+            <path d="M-50,260 C350,160 750,430 1500,240" stroke="#38bdf8" strokeWidth="2.5" fill="none" strokeDasharray="8 5" filter="url(#neonGlow)" />
+            <path d="M0,430 C400,300 850,530 1600,360" stroke="#3b82f6" strokeWidth="2" fill="none" filter="url(#neonGlow)" />
+            <path d="M-150,580 C320,460 920,600 1550,480" stroke="url(#fiberGrad2)" strokeWidth="2" fill="none" />
+            <path d="M100,-50 L1340,950" stroke="url(#pulseGlow)" strokeWidth="2" strokeOpacity="0.6" filter="url(#neonGlow)" />
+            <path d="M1340,-50 L100,950" stroke="#06b6d4" strokeWidth="1.75" strokeOpacity="0.5" />
 
-            {/* Pulsos de fotones / nodos de luz de datos */}
-            <circle cx="480" cy="245" r="4" fill="#67e8f9" className="animate-pulse" />
-            <circle cx="820" cy="420" r="3.5" fill="#38bdf8" className="animate-ping" />
-            <circle cx="1120" cy="210" r="4.5" fill="#22d3ee" />
-            <circle cx="280" cy="510" r="3" fill="#60a5fa" />
+            {/* Pulsos de fotones / nodos de luz de datos vivos */}
+            <circle cx="480" cy="245" r="5" fill="#67e8f9" className="animate-pulse" filter="url(#neonGlow)" />
+            <circle cx="820" cy="420" r="4.5" fill="#38bdf8" className="animate-ping" filter="url(#neonGlow)" />
+            <circle cx="1120" cy="210" r="5" fill="#22d3ee" filter="url(#neonGlow)" />
+            <circle cx="280" cy="510" r="4" fill="#60a5fa" />
           </svg>
 
-          {/* Malla tecnológica / grid de fibra óptica */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#06b6d415_1px,transparent_1px),linear-gradient(to_bottom,#06b6d415_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_at_center,white_30%,transparent_75%)] opacity-70" />
-          
-          {/* Máscara con gradiente vertical para legibilidad óptima */}
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/20 via-slate-950/60 to-slate-950" />
+          {/* Malla tecnológica / grid de fibra óptica sutil */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#06b6d420_1px,transparent_1px),linear-gradient(to_bottom,#06b6d420_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_at_center,white_40%,transparent_80%)] opacity-80" />
         </div>
 
-        <div className="text-center max-w-5xl mx-auto space-y-8 relative">
+        <div className="text-center max-w-5xl mx-auto space-y-4 relative">
           {/* Badge Superior Tecnológico con Pulso Neón */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-slate-900/90 border border-cyan-500/40 text-xs font-semibold text-cyan-300 shadow-lg shadow-cyan-500/20 backdrop-blur-md">
-            <span className="relative flex h-2.5 w-2.5">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900/90 border border-cyan-500/50 text-[11px] font-semibold text-cyan-300 shadow-md shadow-cyan-500/20 backdrop-blur-md">
+            <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
             </span>
             <span className="tracking-wide">Infraestructura FTTH & Carrier-Grade Cloud Core en Argentina</span>
           </div>
 
-          {/* Título de Alto Impacto Telecom */}
-          <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.08]">
+          {/* Título Reducido en Escala Vertical */}
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.12]">
             La red de fibra óptica{" "}
             <span className="relative whitespace-nowrap">
-              <span className="bg-gradient-to-r from-cyan-300 via-teal-300 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(6,182,212,0.45)]">
+              <span className="bg-gradient-to-r from-cyan-300 via-teal-300 to-blue-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(6,182,212,0.5)]">
                 más avanzada
               </span>
             </span>{" "}
@@ -490,81 +494,19 @@ export default function CaraleCorporativaUI() {
           </h1>
 
           {/* Subtítulo Tecnológico Descriptivo */}
-          <p className="text-base sm:text-lg md:text-xl text-slate-300 font-normal leading-relaxed max-w-3xl mx-auto">
+          <p className="text-sm md:text-base max-w-2xl mx-auto text-slate-300 mt-3 font-normal leading-relaxed">
             Conectividad simétrica de ultrabaja latencia, enlaces dedicados B2B con SLA 99.8% y
             transporte mayorista directo a los principales puntos de intercambio de tráfico de Argentina.
           </p>
 
-          {/* 3 Píldoras Interactivas Flotantes Glassmorphism con Brillo y Pulsos de Luz */}
+          {/* Reordenamiento Inmediato: Botones Principales Ubicados Arriba */}
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <div className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400/60 backdrop-blur-xl shadow-lg shadow-cyan-950/40 transition-all hover:scale-[1.03]">
-              <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee] animate-pulse" />
-              <span className="text-xs font-bold text-cyan-200">
-                Latencia Ultrabaja (&lt; 5ms) — Rutas Directas CABASE
-              </span>
-            </div>
-
-            <div className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400/60 backdrop-blur-xl shadow-lg shadow-emerald-950/40 transition-all hover:scale-[1.03]">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse" />
-              <span className="text-xs font-bold text-emerald-200">
-                Disponibilidad 99.8% SLA Garantizado
-              </span>
-            </div>
-
-            <div className="group relative inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-900/80 border border-blue-500/30 hover:border-blue-400/60 backdrop-blur-xl shadow-lg shadow-blue-950/40 transition-all hover:scale-[1.03]">
-              <span className="h-2 w-2 rounded-full bg-blue-400 shadow-[0_0_8px_#60a5fa] animate-pulse" />
-              <span className="text-xs font-bold text-blue-200">
-                Red FTTH Simétrica 100% Fibra Óptica Pura
-              </span>
-            </div>
-          </div>
-
-          {/* Tarjeta Destacada Protagónica de Caralita (Glassmorphism Oficial) */}
-          <div className="bg-slate-900/80 backdrop-blur-md border border-cyan-500/40 rounded-2xl p-4 shadow-xl shadow-cyan-500/15 flex flex-col sm:flex-row items-center justify-between gap-4 max-w-xl mx-auto mt-6 text-left">
-            <div className="flex items-center gap-3.5">
-              <div className="relative shrink-0">
-                <img
-                  src="/caralita-avatar.jpg"
-                  alt="Caralita Avatar Oficial"
-                  width={60}
-                  height={60}
-                  className="w-[60px] h-[60px] rounded-full object-cover object-top ring-2 ring-cyan-400 shadow-md shadow-cyan-400/30"
-                />
-                <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
-              </div>
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-white text-sm">Caralita · Cerebro Autónomo</span>
-                  <span className="inline-flex items-center gap-1 text-[9px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    En línea
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-snug">
-                  Auditoría de módem en vivo, consulta de saldo, facturación y soporte técnico inmediato.
-                </p>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                setIsChatOpen(true);
-                setInputMessage("Hola Caralita, necesito asistencia con mi conexión.");
-              }}
-              className="shrink-0 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-md shadow-cyan-500/20 active:scale-95 transition"
-            >
-              Hablar con Caralita
-            </button>
-          </div>
-
-          {/* Botones de Acción (CTA) de Alto Impacto */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <button
               onClick={() => {
                 const el = document.getElementById("residencial") || document.getElementById("planes");
                 el?.scrollIntoView({ behavior: "smooth" });
               }}
-              className="px-7 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-sm shadow-xl shadow-cyan-500/35 hover:shadow-cyan-400/50 transition-all hover:scale-[1.03] active:scale-[0.98] flex items-center gap-2.5 border border-cyan-400/40"
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-cyan-500/30 hover:scale-105 transition-all text-sm flex items-center gap-2 active:scale-95"
             >
               <span>Ver Planes Residenciales y B2B</span>
               <ArrowRight className="h-4 w-4" />
@@ -574,37 +516,99 @@ export default function CaraleCorporativaUI() {
                 setIsChatOpen(true);
                 setInputMessage("Hola Caralita, quiero consultar la factibilidad técnica y test de cobertura inmediata en mi domicilio.");
               }}
-              className="group px-7 py-4 rounded-2xl border border-cyan-500/40 hover:border-cyan-400 bg-slate-900/80 hover:bg-slate-800/90 text-cyan-200 hover:text-white font-bold text-sm shadow-lg shadow-cyan-950/50 backdrop-blur-xl transition-all hover:scale-[1.03] active:scale-[0.98] flex items-center gap-2.5"
+              className="border border-cyan-400/40 bg-slate-900/60 text-cyan-200 px-6 py-3 rounded-xl hover:bg-slate-800 transition-all text-sm font-semibold flex items-center gap-2 active:scale-95 shadow-md"
             >
-              <Zap className="h-4 w-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-              <span>Test de Cobertura Inmediata</span>
-              <ChevronRight className="h-4 w-4 text-cyan-400 group-hover:translate-x-0.5 transition-transform" />
+              <Zap className="h-4 w-4 text-cyan-400" />
+              <span>Test de Cobertura</span>
+              <ChevronRight className="h-4 w-4 text-cyan-400" />
             </button>
           </div>
 
+          {/* Tarjeta Protagónica de Caralita en el Centro Visual */}
+          <div className="bg-slate-900/90 border border-cyan-400/40 rounded-2xl p-3 max-w-md mx-auto mt-4 flex items-center justify-between gap-3 shadow-xl backdrop-blur-md text-left">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
+                <img
+                  src="/caralita-avatar.jpg"
+                  alt="Caralita Avatar Oficial"
+                  width={50}
+                  height={50}
+                  className="w-[50px] h-[50px] rounded-full object-cover object-top ring-2 ring-cyan-400 shadow-md shadow-cyan-400/30"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-white text-xs truncate">Caralita</span>
+                  <span className="inline-flex items-center gap-1 text-[9px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-1.5 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    En vivo
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-300 leading-tight line-clamp-1">
+                  Auditoría de módem en vivo y soporte técnico inmediato.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                setIsChatOpen(true);
+                setInputMessage("Hola Caralita, necesito asistencia con mi conexión.");
+              }}
+              className="shrink-0 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-[11px] shadow-md shadow-cyan-500/25 active:scale-95 transition whitespace-nowrap"
+            >
+              Hablar con Caralita
+            </button>
+          </div>
+
+          {/* 3 Píldoras Interactivas Flotantes Glassmorphism */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-3">
+            <div className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 hover:border-cyan-400/60 backdrop-blur-xl shadow-md transition-all hover:scale-[1.02]">
+              <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse" />
+              <span className="text-[11px] font-bold text-cyan-200">
+                Latencia Ultrabaja (&lt; 5ms) — Rutas Directas CABASE
+              </span>
+            </div>
+
+            <div className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400/60 backdrop-blur-xl shadow-md transition-all hover:scale-[1.02]">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_#34d399] animate-pulse" />
+              <span className="text-[11px] font-bold text-emerald-200">
+                Disponibilidad 99.8% SLA Garantizado
+              </span>
+            </div>
+
+            <div className="group relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-blue-500/30 hover:border-blue-400/60 backdrop-blur-xl shadow-md transition-all hover:scale-[1.02]">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-400 shadow-[0_0_6px_#60a5fa] animate-pulse" />
+              <span className="text-[11px] font-bold text-blue-200">
+                Red FTTH Simétrica 100% Fibra Óptica Pura
+              </span>
+            </div>
+          </div>
+
           {/* Métricas Operativas de Red */}
-          <div className="pt-10 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <div className="p-4 rounded-2xl border border-slate-800/90 bg-slate-900/60 backdrop-blur-md shadow-inner">
-              <span className="block text-2xl md:text-3xl font-black text-cyan-400">99.8%</span>
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+          <div className="pt-6 grid grid-cols-2 md:grid-cols-4 gap-3 max-w-4xl mx-auto">
+            <div className="p-3 rounded-xl border border-slate-800/90 bg-slate-900/60 backdrop-blur-md shadow-inner">
+              <span className="block text-xl md:text-2xl font-black text-cyan-400">99.8%</span>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                 SLA Garantizado
               </span>
             </div>
-            <div className="p-4 rounded-2xl border border-slate-800/90 bg-slate-900/60 backdrop-blur-md shadow-inner">
-              <span className="block text-2xl md:text-3xl font-black text-emerald-400">100%</span>
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="p-3 rounded-xl border border-slate-800/90 bg-slate-900/60 backdrop-blur-md shadow-inner">
+              <span className="block text-xl md:text-2xl font-black text-emerald-400">100%</span>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                 Fibra Pura GPON
               </span>
             </div>
-            <div className="p-4 rounded-2xl border border-slate-800/90 bg-slate-900/60 backdrop-blur-md shadow-inner">
-              <span className="block text-2xl md:text-3xl font-black text-blue-400">&lt; 5 ms</span>
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="p-3 rounded-xl border border-slate-800/90 bg-slate-900/60 backdrop-blur-md shadow-inner">
+              <span className="block text-xl md:text-2xl font-black text-blue-400">&lt; 5 ms</span>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                 Latencia CABASE IXP
               </span>
             </div>
-            <div className="p-4 rounded-2xl border border-slate-800/90 bg-slate-900/60 backdrop-blur-md shadow-inner">
-              <span className="block text-2xl md:text-3xl font-black text-indigo-400">24/7/365</span>
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            <div className="p-3 rounded-xl border border-slate-800/90 bg-slate-900/60 backdrop-blur-md shadow-inner">
+              <span className="block text-xl md:text-2xl font-black text-indigo-400">24/7/365</span>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                 Monitoreo NOC IA
               </span>
             </div>
