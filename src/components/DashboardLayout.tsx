@@ -65,6 +65,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setIsMobileMenuOpen(false);
   }, [pathname]);
 
+  // Bloqueo de scroll exclusivo cuando el drawer mobile está abierto
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
+
   // Consultar hilos de WhatsApp periódicamente para alertar al operador
   useEffect(() => {
     async function checkHandoffThreads() {
@@ -100,7 +112,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen w-full bg-slate-950 text-slate-100 overflow-hidden font-sans relative">
+    <div className="min-h-screen w-full bg-[#090b0e] text-slate-100 flex flex-col lg:flex-row overflow-x-hidden font-sans relative">
       {/* Backdrop oscuro para mobile cuando el drawer está abierto */}
       {isMobileMenuOpen && (
         <div
@@ -112,7 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Sidebar Lateral - CARALE by Nora (Responsive Drawer) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-800/90 bg-slate-900/95 flex flex-col justify-between shrink-0 shadow-2xl backdrop-blur-md transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 border-r border-slate-800/90 bg-slate-900/95 flex flex-col justify-between shrink-0 shadow-2xl backdrop-blur-md transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:h-screen lg:sticky lg:top-0 ${
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
@@ -279,9 +291,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Área Central / Contenido Principal */}
-      <div className="flex-1 flex flex-col w-full min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col w-full min-w-0">
         {/* Top Bar con Acciones Rápidas del NOC y Estado */}
-        <header className="h-16 border-b border-slate-800 bg-slate-900/80 px-3 sm:px-4 w-full max-w-full flex items-center justify-between gap-2 overflow-hidden backdrop-blur shrink-0">
+        <header className="h-16 border-b border-slate-800 bg-slate-900/80 px-3 sm:px-4 w-full max-w-full flex items-center justify-between gap-2 overflow-hidden backdrop-blur shrink-0 sticky top-0 z-30">
           {/* Lado Izquierdo: Botón Hamburguesa Mobile + Estado de Red Central */}
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -399,7 +411,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
 
         {/* Contenido Dinámico */}
-        <main className="flex-1 w-full min-w-0 overflow-y-auto">{children}</main>
+        <main className="flex-1 w-full min-w-0 overflow-y-visible lg:overflow-y-auto">{children}</main>
       </div>
 
       {/* Modal QR Portal Público */}
